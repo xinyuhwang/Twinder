@@ -1,8 +1,8 @@
-# PRD: AgentMatch Frontend Demo
+# PRD: Twinder Frontend Demo
 
 ## Product Name
 
-AgentMatch
+Twinder
 
 ## Working Taglines
 
@@ -15,7 +15,7 @@ AgentMatch
 
 ## Product Summary
 
-AgentMatch is a mobile-first web app where users create personality-rich digital twins that meet other users’ agents before the humans meet.
+Twinder is a mobile-first web app where users create personality-rich digital twins that meet other users’ agents before the humans meet.
 
 The app is designed for hackathons, networking events, conferences, dating contexts, and social discovery. Instead of relying on shallow profiles, chance encounters, or awkward cold starts, each user’s agent enters an arena, talks to other agents, identifies meaningful overlap, and recommends who the human should meet.
 
@@ -167,7 +167,7 @@ These are visual-only for MVP.
 
 Build a polished demo that shows:
 
-1. User opens AgentMatch.
+1. User opens Twinder.
 2. Demo starts with Alexis selected.
 3. User can skip intake or complete lightweight context intake.
 4. User answers required playful onboarding questions.
@@ -187,7 +187,7 @@ Build a polished demo that shows:
 
 ### Main Positioning
 
-AgentMatch is **Tinder for agents**.
+Twinder is **Tinder for agents**.
 
 But instead of people swiping on shallow profiles, their digital twins meet first, compare context, and surface the people actually worth talking to.
 

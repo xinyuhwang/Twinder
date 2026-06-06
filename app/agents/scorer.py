@@ -1,4 +1,5 @@
 import json
+import re
 
 from app.agents.prompts import VIBE_SCORING_PROMPT
 from app.database import get_session
@@ -31,7 +32,7 @@ async def score_conversation(room_id: str):
             }],
             max_tokens=500,
         )
-        result = json.loads(raw)
+        result = _parse_json(raw)
     except Exception:
         result = {"score": 50, "summary": "Unable to score conversation.", "common_interests": []}
 
@@ -50,3 +51,23 @@ async def score_conversation(room_id: str):
         "type": "vibe_score",
         "data": result,
     }))
+
+
+def _parse_json(text: str) -> dict:
+    """Extract JSON from LLM response, handling markdown code blocks."""
+    text = text.strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
+    if match:
+        return json.loads(match.group(1).strip())
+
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    if start >= 0 and end > start:
+        return json.loads(text[start:end])
+
+    raise ValueError(f"Could not parse JSON from: {text[:200]}")

@@ -40,3 +40,32 @@ class MatchmakeResponse(BaseModel):
     status: str  # queued, matched
     room_id: Optional[str] = None
     position: Optional[int] = None
+
+
+class ConversationHighlight(BaseModel):
+    speaker: str
+    text: str
+
+
+class MatchCard(BaseModel):
+    score: float
+    headline: str = ""
+    match_type: str = ""
+    summary: str = ""
+    strongest_overlap: Optional[str] = None
+    non_obvious_overlap: Optional[str] = None
+    complementary_dynamic: Optional[str] = None
+    suggested_opener: Optional[str] = None
+    follow_up_questions: list[str] = []
+    conversation_highlights: list[ConversationHighlight] = []
+    common_interests: list[str] = []
+    opponent_id: int
+    opponent_name: str
+    opponent_avatar: Optional[str] = None
+    conversation_id: Optional[str] = None
+
+
+class ArenaResponse(BaseModel):
+    status: str  # running, completed
+    arena_id: Optional[str] = None
+    match_cards: list[MatchCard] = []

@@ -1,0 +1,10 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/arena/page": "/arena",
+  "/auth/callback/page": "/auth/callback",
+  "/demo/page": "/demo",
+  "/favicon.ico/route": "/favicon.ico",
+  "/page": "/",
+  "/room/[roomId]/page": "/room/[roomId]"
+}

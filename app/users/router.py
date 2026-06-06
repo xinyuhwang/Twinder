@@ -1,3 +1,6 @@
+import asyncio
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
@@ -7,9 +10,10 @@ from app.agents.profile import (
     generate_profile,
     new_profile_version,
 )
+from app.agents.synthesis import build_system_instruction, synthesize_profile
 from app.database import get_session
 from app.deps import get_current_user
-from app.models import User
+from app.models import ProfileVersion, User
 from app.schemas import IntakeRequest, TwinPreview, UserRead, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -43,11 +47,31 @@ async def run_intake(
     session: Session = Depends(get_session),
 ):
     yaml_str = await generate_profile(body.raw_context, body.answers)
-    new_profile_version(session, user.id, profile_yaml=yaml_str)
+    pv = new_profile_version(session, user.id, profile_yaml=yaml_str)
     user.persona = _derive_persona(yaml_str)
     session.add(user)
     session.commit()
+
+    # Fire synthesis in background — engine falls back to persona until it completes
+    asyncio.create_task(_run_synthesis(pv.id, yaml_str, user.name))
+
     return TwinPreview(**_to_twin_preview(yaml_str))
+
+
+async def _run_synthesis(pv_id: int, yaml_str: str, user_name: str):
+    try:
+        synthesis = await synthesize_profile(yaml_str)
+        system_instruction = build_system_instruction(synthesis, user_name)
+        session = next(get_session())
+        pv = session.get(ProfileVersion, pv_id)
+        if pv:
+            pv.matching_vector = json.dumps(synthesis.get("matching_vector") or {})
+            pv.system_instruction = system_instruction
+            session.add(pv)
+            session.commit()
+        session.close()
+    except Exception:
+        pass  # synthesis is best-effort; engine falls back to persona
 
 
 @router.get("/{user_id}", response_model=UserRead)

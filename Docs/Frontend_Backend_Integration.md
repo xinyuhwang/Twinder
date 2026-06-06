@@ -11,10 +11,13 @@ Assessment of how the Twinder PRD frontend demo ([Twinder_PRD.md](./Twinder_PRD.
 | Layer | Status | Location |
 |-------|--------|----------|
 | Backend (FastAPI) | Built | `app/` in this repo |
-| Frontend (Next.js) | Not in repo | PRD spec only; may live in another branch or repo |
-| Intake / YAML system | Documented, not wired | `Prompts/intake.md`, `Templates/` |
+| Frontend (Next.js) | Partial live prototype | `frontend/` in this repo |
+| Intake / YAML system | Backend wired, frontend missing | `POST /users/me/intake`, `app/agents/profile.py`, `app/agents/synthesis.py` |
+| Arena batch matching | Backend wired, frontend unused | `POST /arena/start`, `GET /arena/results`, `GET /arena/conversation/{conversation_id}` |
 
-This repo contains the backend only. There is no Next.js app here yet: no `lib/mock-api.ts`, no routes like `/arena` or `/matches`. The work ahead is not "swap mock calls for real calls" inside an existing frontend. It is **build the frontend against the backend API**, using the PRD as the UX spec and the backend as the live data layer.
+This repo now contains both a live backend and a partial Next.js frontend. The frontend currently implements `/`, `/demo`, `/arena`, `/room/[roomId]`, and `/auth/callback`. It calls the backend through `frontend/lib/api.ts`, not a mocked `lib/mock-api.ts`.
+
+The work ahead is not "build a frontend from scratch." It is **align the partial frontend with the PRD demo flow**, deciding where to keep local/mock behavior for the polished demo and where to wire the existing backend APIs.
 
 ---
 
@@ -45,11 +48,14 @@ Follow the PRD pattern: one data layer the UI calls (`lib/api.ts`, replacing the
 | Login / demo user | `POST /auth/dev-login?name=&persona=` | Best for hackathon demo; OAuth via `GET /auth/google` for real users |
 | Get current user | `GET /auth/me` or `GET /users/me` | Same shape |
 | Save twin profile | `PUT /users/me` with `{ persona }` | See profile gap below |
-| Enter arena / matchmaking | `POST /rooms/matchmake` + poll `GET /rooms/matchmake/status` | 1:1 queue, not 5-agent arena |
-| List matches | `GET /rooms` | Completed rooms with `vibe_score` |
-| Match detail | `GET /rooms/{id}` | Partial fit |
-| Agent transcript | `GET /rooms/{id}/messages` | Full transcript, not highlights |
-| Live eavesdrop | `WS /ws/rooms/{id}?token=` | Real-time events |
+| Enter current frontend arena | `POST /rooms/matchmake` + poll `GET /rooms/matchmake/status` | Current `/arena` route uses 1:1 queue |
+| Run PRD-style arena batch | `POST /arena/start?mode=` | Backend runs against all other DB users, not capped to 5 |
+| List arena matches | `GET /arena/results` | Returns ranked `MatchCard` objects |
+| Arena eavesdrop | `GET /arena/conversation/{conversation_id}` | Full arena conversation stream |
+| List live rooms | `GET /rooms` | Completed rooms with `vibe_score` |
+| Live room detail | `GET /rooms/{id}` | Partial fit for match detail |
+| Live room transcript | `GET /rooms/{id}/messages` | Full transcript, not highlights |
+| Live room WebSocket | `WS /ws/rooms/{id}?token=` | Real-time events |
 | Human takeover | `POST /rooms/{id}/takeover` | Maps to PRD "drop in" concept |
 | End conversation | `POST /rooms/{id}/complete` | Triggers scoring |
 
@@ -71,17 +77,17 @@ Scorer payload includes `common_interests` and `suggested_icebreaker`, which ali
 ### Suggested Frontend Architecture
 
 ```
-Next.js pages (PRD routes)
+Next.js pages (implemented and PRD routes)
     |
     v
-lib/api.ts          <- replace mock-api.ts
+frontend/lib/api.ts
     |
     +-- REST  -> FastAPI (localhost:8000)
     +-- WS    -> /ws/rooms/{id}
-    +-- localStorage for demo-only state (Save/Pass, selected demo user)
+    +-- localStorage for auth/demo state (token, user, persona, room)
 ```
 
-Keep PRD demo persistence (Save/Pass, swipe history) in localStorage until backend adds those endpoints.
+Keep PRD demo persistence for Save, Pass, swipe history, and mocked Meet in localStorage until backend adds those endpoints.
 
 ---
 
@@ -89,51 +95,51 @@ Keep PRD demo persistence (Save/Pass, swipe history) in localStorage until backe
 
 ### Critical Gaps
 
-#### 1. Matching Model: 1:1 Queue vs 5-Agent Arena
+#### 1. Matching Model: Current 1:1 Frontend vs 5-Agent PRD Arena
 
-| PRD | Backend |
+| PRD | Current implementation |
 |---|---|
-| User's twin meets 5 seeded agents sequentially | FIFO queue pairs two real users |
-| Precomputed highlights and ranked cards | One room per pair, score after conversation |
-| Demo completes in under 3 minutes | Real LLM loop: up to 20 messages, 3s pacing (~1+ min per pair) |
+| User's twin meets 5 seeded agents sequentially | Frontend `/arena` uses FIFO 1:1 room queue |
+| Precomputed highlights and ranked cards | Backend `/arena/start` returns ranked `MatchCard` objects, but frontend does not call it |
+| Demo completes in under 3 minutes | Live room loop can take 20 messages with 3s pacing; arena batch uses multiple real LLM calls |
 
 **Options to connect without rewriting everything:**
 
-- **Demo mode (fastest):** Seed 7 users via `dev-login`, run matchmake in parallel or scripted pairs, use WS + REST for live/real data. Arena UI becomes a **progress view** over real rooms, not a mock animation.
-- **Hybrid:** Keep PRD arena as theater, but trigger real backend conversations in background and swap in real scores when ready.
-- **Full backend alignment:** Add an "arena orchestrator" that pairs one user against N queued/seeded twins and returns ranked results. This does not exist today.
+- **Frontend alignment:** Wire PRD arena UI to `POST /arena/start`, then render `MatchCard` results into `/matches`.
+- **Demo cap:** Cap or filter `/arena/start` results to 5 opponents for the PRD demo, because the backend currently runs against all other users.
+- **Hybrid:** Keep PRD arena theater locally, but trigger real backend arena conversations in the background and swap in real scores when ready.
 
 #### 2. Profile / Twin Model
 
 | PRD | Backend |
 |---|---|
-| Hidden YAML profile (`Templates/profile.yaml`) | Single optional `persona` string on `User` |
-| Intake paste + playful questions + follow-ups | No intake API |
-| Twin preview card (vibe, looking for, bait, privacy) | Only `name`, `avatar_url`, `persona` |
-| Mode-aware prompts (hackathon/dating/networking) | One generic `TWIN_SYSTEM_PROMPT` |
+| Hidden YAML profile (`Templates/profile.yaml`) | `ProfileVersion.profile_yaml`, `matching_vector`, and `system_instruction` |
+| Intake paste + playful questions + follow-ups | `POST /users/me/intake` exists, but no frontend onboarding UI calls it |
+| Twin preview card (vibe, looking for, bait, privacy) | Backend returns `TwinPreview` with public summary, looking_for, and interests |
+| Mode-aware prompts (hackathon/dating/networking) | Arena accepts `mode`; live room engine currently hardcodes networking |
 
-`Prompts/intake.md` and YAML templates exist in the repo but are **not wired into the API**.
+`Prompts/intake.md` and YAML templates remain useful references, but the live backend code now lives in `app/agents/profile.py` and `app/agents/synthesis.py`.
 
 **Connection path:**
 
 1. Frontend collects onboarding answers.
-2. New backend endpoint runs intake LLM call and produces YAML (stored server-side, never sent to client).
-3. Backend derives `persona` (or structured fields) for agent prompts.
-4. Frontend shows human-readable twin preview from a **sanitized** API response.
-
-Today you can only `PUT /users/me` with a hand-built persona string.
+2. Frontend calls `POST /users/me/intake`.
+3. Backend generates YAML, synthesis, matching vector, and system instruction server-side.
+4. Backend returns a sanitized `TwinPreview`.
+5. Frontend shows the human-readable twin preview without exposing YAML or internal instructions.
 
 #### 3. Match Object Richness
 
 PRD match cards need: headline, match type, strongest/non-obvious overlap, complementary dynamic, possible mismatch, follow-up questions, help exchange, privacy note, agent summary.
 
-Backend room/score gives: `vibe_score`, `vibe_summary`, `common_interests`, `suggested_icebreaker`.
+Backend arena `MatchCard` gives most PRD match-card fields. Backend room scoring gives only persisted `vibe_score` and `vibe_summary`; the scorer event can include `common_interests` and `suggested_icebreaker`.
 
-That is enough for a **minimal** match card, not the full PRD detail page.
+Use `/arena/start` for PRD-shaped match cards. Use room scoring for a minimal live conversation result unless `scorer.py` is expanded to persist richer fields.
 
 **Options:**
 
-- Extend `scorer.py` to return the full PRD-shaped JSON.
+- Wire frontend match queue to arena `MatchCard` objects.
+- Extend `scorer.py` to persist the full PRD-shaped JSON for live rooms.
 - Add a post-score "match explainer" LLM step.
 - Keep rich copy mocked until scoring prompt is tuned.
 

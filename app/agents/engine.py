@@ -2,6 +2,7 @@ import asyncio
 import json
 from datetime import datetime, timezone
 
+from app.agents.profile import get_active_profile
 from app.agents.prompts import MODE_GUIDELINES, TWIN_OPENER, TWIN_SYSTEM_PROMPT
 from app.database import get_session
 from app.llm import chat
@@ -45,15 +46,28 @@ async def run_conversation(room_id: str):
     if len(users) < 2:
         return
 
+    # Wait for synthesis to complete for all participants (max 60s)
+    for _ in range(60):
+        session.expire_all()
+        if all(
+            (lambda pv: pv and pv.system_instruction)(get_active_profile(session, u.id))
+            for u in users
+        ):
+            break
+        await asyncio.sleep(1)
+
     # Build system prompts for each agent
     system_prompts = {}
     for user in users:
-        persona = user.persona or f"{user.name} — no detailed profile provided yet."
-        mode = "networking"
-        system_prompts[user.id] = TWIN_SYSTEM_PROMPT.format(
-            name=user.name, persona=persona,
-            mode_guidelines=MODE_GUIDELINES.get(mode, MODE_GUIDELINES["networking"]),
-        )
+        pv = get_active_profile(session, user.id)
+        if pv and pv.system_instruction:
+            system_prompts[user.id] = pv.system_instruction
+        else:
+            persona = user.persona or f"{user.name} — no detailed profile provided yet."
+            system_prompts[user.id] = TWIN_SYSTEM_PROMPT.format(
+                name=user.name, persona=persona,
+                mode_guidelines=MODE_GUIDELINES.get("networking", MODE_GUIDELINES["networking"]),
+            )
 
     turn_order = [users[0], users[1]]
     is_first_message = True
@@ -141,11 +155,15 @@ async def respond_as_agent(room_id: str, agent_user_id: int):
     ))
     users = [session.get(User, p.user_id) for p in participants if session.get(User, p.user_id)]
 
-    persona = user.persona or f"{user.name} — no detailed profile provided yet."
-    system = TWIN_SYSTEM_PROMPT.format(
-        name=user.name, persona=persona,
-        mode_guidelines=MODE_GUIDELINES.get("networking", MODE_GUIDELINES["networking"]),
-    )
+    pv = get_active_profile(session, user.id)
+    if pv and pv.system_instruction:
+        system = pv.system_instruction
+    else:
+        persona = user.persona or f"{user.name} — no detailed profile provided yet."
+        system = TWIN_SYSTEM_PROMPT.format(
+            name=user.name, persona=persona,
+            mode_guidelines=MODE_GUIDELINES.get("networking", MODE_GUIDELINES["networking"]),
+        )
 
     conversation = await _build_messages(room_id, agent_user_id, users, False)
 

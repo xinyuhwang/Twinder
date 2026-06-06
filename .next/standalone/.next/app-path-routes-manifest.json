@@ -1,0 +1,16 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/presence/route": "/api/presence",
+  "/arena/page": "/arena",
+  "/demo/page": "/demo",
+  "/favicon.ico/route": "/favicon.ico",
+  "/integrations/page": "/integrations",
+  "/join/page": "/join",
+  "/matches/[matchId]/page": "/matches/[matchId]",
+  "/matches/page": "/matches",
+  "/onboarding/page": "/onboarding",
+  "/onboarding/preview/page": "/onboarding/preview",
+  "/onboarding/questions/page": "/onboarding/questions",
+  "/page": "/"
+}

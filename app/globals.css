@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+}
+
+body {
+  background: #0a0a0f;
+  color: #f0f0f5;
+  overscroll-behavior: none;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #a78bfa, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.card-glow {
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.15), 0 8px 32px rgba(0, 0, 0, 0.4);
+}

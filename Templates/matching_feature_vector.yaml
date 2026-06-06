@@ -1,0 +1,117 @@
+matching_feature_vector:
+  purpose:
+    dating_orientation:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    friendship_orientation:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    networking_orientation:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    collaboration_orientation:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+
+  vibe:
+    playfulness:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    earnestness:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    emotional_intensity:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    warmth:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    weirdness_or_niche_energy:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+
+  social_style:
+    introversion_to_extroversion:
+      score: 0.0-1.0
+      scale_note: "0 = more introverted/private, 1 = more extroverted/socially outward"
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    directness:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    openness_to_spontaneity:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+
+  compatibility_preferences:
+    wants_depth:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    wants_lightness:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    wants_stability:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    wants_novelty:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    drawn_to_ambition:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:
+    drawn_to_emotional_intelligence:
+      score: 0.0-1.0
+      confidence: high | medium | low
+      evidence:
+        -
+      notes:

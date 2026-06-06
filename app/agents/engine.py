@@ -2,7 +2,7 @@ import asyncio
 import json
 from datetime import datetime, timezone
 
-from app.agents.prompts import TWIN_OPENER, TWIN_SYSTEM_PROMPT
+from app.agents.prompts import MODE_GUIDELINES, TWIN_OPENER, TWIN_SYSTEM_PROMPT
 from app.database import get_session
 from app.llm import chat
 from app.models import Room, RoomParticipant, User
@@ -49,8 +49,10 @@ async def run_conversation(room_id: str):
     system_prompts = {}
     for user in users:
         persona = user.persona or f"{user.name} — no detailed profile provided yet."
+        mode = "networking"
         system_prompts[user.id] = TWIN_SYSTEM_PROMPT.format(
-            name=user.name, persona=persona, mode="networking"
+            name=user.name, persona=persona,
+            mode_guidelines=MODE_GUIDELINES.get(mode, MODE_GUIDELINES["networking"]),
         )
 
     turn_order = [users[0], users[1]]
@@ -140,7 +142,10 @@ async def respond_as_agent(room_id: str, agent_user_id: int):
     users = [session.get(User, p.user_id) for p in participants if session.get(User, p.user_id)]
 
     persona = user.persona or f"{user.name} — no detailed profile provided yet."
-    system = TWIN_SYSTEM_PROMPT.format(name=user.name, persona=persona, mode="networking")
+    system = TWIN_SYSTEM_PROMPT.format(
+        name=user.name, persona=persona,
+        mode_guidelines=MODE_GUIDELINES.get("networking", MODE_GUIDELINES["networking"]),
+    )
 
     conversation = await _build_messages(room_id, agent_user_id, users, False)
 
@@ -176,7 +181,7 @@ async def _build_messages(
 ) -> list[dict]:
     """Build Claude messages array from conversation history, mapped to current agent's perspective."""
     if is_first:
-        return [{"role": "user", "content": TWIN_OPENER}]
+        return [{"role": "user", "content": TWIN_OPENER.format(mode="networking")}]
 
     r = get_redis()
     raw = await r.xrange(f"room:{room_id}:messages")
@@ -191,11 +196,11 @@ async def _build_messages(
         messages.append({"role": role, "content": fields["content"]})
 
     if not messages:
-        return [{"role": "user", "content": TWIN_OPENER}]
+        return [{"role": "user", "content": TWIN_OPENER.format(mode="networking")}]
 
     # Claude requires messages to start with "user" role
     if messages[0]["role"] == "assistant":
-        messages.insert(0, {"role": "user", "content": TWIN_OPENER})
+        messages.insert(0, {"role": "user", "content": TWIN_OPENER.format(mode="networking")})
 
     return messages
 

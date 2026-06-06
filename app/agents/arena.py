@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from sqlmodel import select
 
-from app.agents.prompts import MATCH_CARD_SCORING_PROMPT, TWIN_OPENER, TWIN_SYSTEM_PROMPT
+from app.agents.prompts import MATCH_CARD_SCORING_PROMPT, MODE_GUIDELINES, TWIN_OPENER, TWIN_SYSTEM_PROMPT
 from app.database import get_session
 from app.llm import chat
 from app.models import User
@@ -64,8 +64,9 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
     persona_a = user_a.persona or f"{user_a.name} — no detailed profile provided yet."
     persona_b = user_b.persona or f"{user_b.name} — no detailed profile provided yet."
 
-    system_a = TWIN_SYSTEM_PROMPT.format(name=user_a.name, persona=persona_a, mode=mode)
-    system_b = TWIN_SYSTEM_PROMPT.format(name=user_b.name, persona=persona_b, mode=mode)
+    mode_guidelines = MODE_GUIDELINES.get(mode, MODE_GUIDELINES["networking"])
+    system_a = TWIN_SYSTEM_PROMPT.format(name=user_a.name, persona=persona_a, mode_guidelines=mode_guidelines)
+    system_b = TWIN_SYSTEM_PROMPT.format(name=user_b.name, persona=persona_b, mode_guidelines=mode_guidelines)
 
     # Store conversation in Redis Stream for potential eavesdrop later
     r = get_redis()
@@ -78,7 +79,7 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
         if turn % 2 == 0:
             # A's turn
             if turn == 0:
-                prompt_msgs = [{"role": "user", "content": TWIN_OPENER}]
+                prompt_msgs = [{"role": "user", "content": TWIN_OPENER.format(mode=mode)}]
             else:
                 prompt_msgs = messages_a
             content = await chat(messages=prompt_msgs, system=system_a)

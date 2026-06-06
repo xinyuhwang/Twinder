@@ -60,7 +60,7 @@ export default function Landing() {
           Try the demo
         </Link>
         <a
-          href="http://localhost:8000/auth/google"
+          href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/google`}
           className="block w-full text-center py-4 rounded-2xl bg-zinc-800 text-white font-semibold text-lg hover:bg-zinc-700 transition-colors border border-zinc-700"
         >
           Sign in with Google

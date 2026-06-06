@@ -34,12 +34,12 @@ function AvatarDot({
 
 export default function Arena() {
   const router = useRouter();
-  const [status, setStatus] = useState<'queued' | 'matched' | 'error'>('queued');
   const [position, setPosition] = useState<number | null>(null);
   const [secondsWaiting, setSecondsWaiting] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const failureCount = useRef(0);
 
   const token = localStore.getToken();
   const personaId = localStore.getPersonaId();
@@ -52,15 +52,17 @@ export default function Arena() {
       return;
     }
 
-    // Start matchmaking
-    api.matchmake(token).catch(() => {
-      // May already be queued — ignore
+    // Start matchmaking — ignore 4xx (already queued is fine)
+    api.matchmake(token).catch(err => {
+      const msg = err instanceof Error ? err.message : '';
+      if (!msg.includes('4')) setErrorMsg('Could not reach backend. Is it running?');
     });
 
     // Poll status every 2 seconds
     async function checkStatus() {
       try {
         const res = await api.matchmakeStatus(token!);
+        failureCount.current = 0;
         if (res.status === 'matched' && res.room_id) {
           localStore.setCurrentRoomId(res.room_id);
           clearIntervals();
@@ -69,7 +71,11 @@ export default function Arena() {
           setPosition(res.position ?? null);
         }
       } catch {
-        // Ignore transient errors
+        failureCount.current += 1;
+        if (failureCount.current >= 3) {
+          clearIntervals();
+          setErrorMsg('Lost connection to backend. Make sure it is running at http://localhost:8000.');
+        }
       }
     }
 
@@ -91,7 +97,7 @@ export default function Arena() {
 
   if (!token) return null;
 
-  if (status === 'error') {
+  if (errorMsg) {
     return (
       <div className="flex flex-col min-h-screen px-6 py-10 items-center justify-center gap-6 text-center">
         <div className="text-5xl">!</div>

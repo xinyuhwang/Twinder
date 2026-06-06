@@ -70,11 +70,16 @@ async def dev_login(
     session: Session = Depends(get_session),
 ):
     """Dev-only: create a test user and return a JWT. Skip Google OAuth."""
-    email = f"{name.lower().replace(' ', '.')}@dev.local"
-    user = session.exec(select(User).where(User.email == email)).first()
+    # Try to find existing user by google_id (matches seeded demo users and prior dev-logins)
+    google_id = f"demo-{name.lower().replace(' ', '-')}"
+    user = session.exec(select(User).where(User.google_id == google_id)).first()
     if not user:
+        google_id = f"dev-{name.lower().replace(' ', '-')}"
+        user = session.exec(select(User).where(User.google_id == google_id)).first()
+    if not user:
+        email = f"{name.lower().replace(' ', '.')}@dev.local"
         user = User(
-            google_id=f"dev-{name.lower().replace(' ', '-')}",
+            google_id=google_id,
             email=email,
             name=name,
             persona=persona,

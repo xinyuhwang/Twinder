@@ -12,6 +12,8 @@ from app.redis_client import close_redis, get_redis, init_redis
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db()
+    from app.seed import seed_demo_users
+    seed_demo_users()
     await init_redis()
     # Verify Redis connection
     r = get_redis()

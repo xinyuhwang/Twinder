@@ -24,6 +24,17 @@ class Room(SQLModel, table=True):
     completed_at: Optional[datetime] = None
 
 
+class ProfileVersion(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    version: int = Field(default=1)
+    profile_yaml: Optional[str] = None
+    matching_vector: Optional[str] = None
+    system_instruction: Optional[str] = None
+    is_active: bool = Field(default=True, index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class RoomParticipant(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     room_id: str = Field(foreign_key="room.id", index=True)

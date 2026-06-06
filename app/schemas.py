@@ -65,6 +65,17 @@ class MatchCard(BaseModel):
     conversation_id: Optional[str] = None
 
 
+class IntakeRequest(BaseModel):
+    raw_context: str
+    answers: dict | None = None
+
+
+class TwinPreview(BaseModel):
+    public_safe_summary: Optional[str] = None
+    looking_for: list[str] = []
+    interests: list[str] = []
+
+
 class ArenaResponse(BaseModel):
     status: str  # running, completed
     arena_id: Optional[str] = None

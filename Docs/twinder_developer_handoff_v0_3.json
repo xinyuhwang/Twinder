@@ -1,0 +1,158 @@
+{
+  "project": "Twinder",
+  "artifact_version": "0.3",
+  "date": "2026-06-06",
+  "artifact_type": "MVP UX + developer handoff",
+  "mvp": {
+    "launch_context": "hackathon event",
+    "onboarding_timing": [
+      "before event",
+      "at event via QR/link"
+    ],
+    "mode": "fluid networking + dating; no hard mode switching required for MVP",
+    "photos": {
+      "mvp": "no photos",
+      "v3": "photos may be introduced later"
+    },
+    "matching": {
+      "trigger": "as users join",
+      "process": [
+        "generate twin profile",
+        "generate matching vector",
+        "compare with attendee pool",
+        "run twin-to-twin conversation for promising candidates",
+        "score match",
+        "surface matches"
+      ],
+      "numeric_scores_visible": true,
+      "hide_low_scores_by_default_below": 50
+    },
+    "twin_tone": {
+      "persona": "wingman",
+      "theatricality_default": "lightly theatrical to character-dialogue",
+      "can_be_flirty": true,
+      "explicit_sexual_content_first_contact": false
+    },
+    "identity_reveal": {
+      "before_intro_allowed": [
+        "first name if public",
+        "public role/company/school",
+        "public project/interests",
+        "intent chips",
+        "resonance score",
+        "suggested conversation topic",
+        "twin-generated summary"
+      ],
+      "before_intro_forbidden": [
+        "photos",
+        "contact info",
+        "private YAML/profile fields",
+        "sensitive details"
+      ]
+    }
+  },
+  "primary_dashboard_sections": [
+    "Twin status",
+    "Live room activity",
+    "Best matches",
+    "Twin talks",
+    "Intros",
+    "Tune my twin"
+  ],
+  "screens": [
+    "Event Entry / QR Landing",
+    "Onboarding",
+    "Twin Generated",
+    "Dashboard / Discover",
+    "Twin Talk Detail",
+    "Intro Request",
+    "Mutual Intro"
+  ],
+  "components": {
+    "ResonanceScoreBadge": {
+      "props": [
+        "score",
+        "label",
+        "confidence"
+      ],
+      "notes": "Always accompany with explanation"
+    },
+    "MatchCard": {
+      "props": [
+        "publicName",
+        "publicRoleOrProject",
+        "resonanceScore",
+        "resonanceLabel",
+        "sharedSignals",
+        "suggestedTopic",
+        "ctaState"
+      ],
+      "notes": "No photo prop in MVP"
+    },
+    "TwinTalkCard": {
+      "props": [
+        "theirTwinLine",
+        "yourTwinLine",
+        "summary",
+        "tone"
+      ]
+    },
+    "IntroRequestCard": {
+      "props": [
+        "targetPublicName",
+        "reason",
+        "suggestedMessage",
+        "status"
+      ]
+    },
+    "TuneTwinControls": {
+      "actions": [
+        "approveInsight",
+        "rejectInsight",
+        "lessFlirty",
+        "moreProfessional",
+        "moreWeird",
+        "askFollowUp",
+        "regenerate"
+      ]
+    }
+  },
+  "safety": {
+    "no_sexual_content_first_contact": true,
+    "flirty_allowed": true,
+    "block_report_required": true,
+    "no_repeated_intro_requests_after_decline": true,
+    "user_controls_romantic_availability": true
+  },
+  "stack": {
+    "frontend": "React/Next likely",
+    "deployment": "Vercel likely",
+    "database_auth": "Supabase likely",
+    "agent_ui": "CopilotKit",
+    "observability_evals": "Weights & Biases Weave",
+    "cache_jobs": "Redis",
+    "coding_workflow": [
+      "Claude Code",
+      "Cursor"
+    ]
+  },
+  "acceptance_criteria": [
+    "User enters event via link/QR",
+    "User creates twin through short onboarding",
+    "Dashboard shows live matching status",
+    "Matches are generated as attendees join",
+    "Numeric resonance scores and explanations are shown",
+    "Twin talk summaries are viewable",
+    "User can request or accept intro",
+    "No photos are shown in MVP",
+    "No contact info before mutual intro",
+    "User can correct/tune twin",
+    "System prevents explicit sexual first-contact content",
+    "Developer can inspect match/twin reasoning via traces"
+  ],
+  "open_ambiguities": [
+    "Exact meaning of 'B2' and '60 is good' from voice note",
+    "Whether 'dashboard has more than enough' means dashboard should be the only main screen for MVP",
+    "Whether event location/proximity should be visible during intros"
+  ]
+}

@@ -1,10 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
+from app.agents.profile import (
+    _derive_persona,
+    _to_twin_preview,
+    generate_profile,
+    new_profile_version,
+)
 from app.database import get_session
 from app.deps import get_current_user
 from app.models import User
-from app.schemas import UserRead, UserUpdate
+from app.schemas import IntakeRequest, TwinPreview, UserRead, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -28,6 +34,20 @@ async def update_me(
     session.commit()
     session.refresh(user)
     return user
+
+
+@router.post("/me/intake", response_model=TwinPreview)
+async def run_intake(
+    body: IntakeRequest,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    yaml_str = await generate_profile(body.raw_context, body.answers)
+    new_profile_version(session, user.id, profile_yaml=yaml_str)
+    user.persona = _derive_persona(yaml_str)
+    session.add(user)
+    session.commit()
+    return TwinPreview(**_to_twin_preview(yaml_str))
 
 
 @router.get("/{user_id}", response_model=UserRead)

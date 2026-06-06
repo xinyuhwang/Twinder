@@ -20,23 +20,25 @@ conversations surface as matches, ranked by "vibe score." Then you meet IRL.
 - SQLModel (SQLAlchemy + Pydantic)
 - Redis (Streams, Pub/Sub, Hashes) — sponsor integration
 - LiteLLM (provider-agnostic LLM calls: Claude, GPT-4o, etc.)
-- Google OAuth + JWT auth
+- Google OAuth + JWT auth + dev-login shortcut
 - SQLite for persistence
+- 7 seeded demo users with rich personas (auto-seeded on startup)
 
 *** Project structure
 #+begin_example
 app/
-├── main.py              # FastAPI app, lifespan, CORS
+├── main.py              # FastAPI app, lifespan, CORS, auto-seeds demo users
 ├── config.py            # Pydantic Settings (.env)
 ├── deps.py              # Auth dependency (JWT)
 ├── database.py          # SQLite engine
 ├── models.py            # User, Room, RoomParticipant
-├── schemas.py           # Request/response models
+├── schemas.py           # Request/response models (incl. MatchCard, ArenaResponse)
 ├── redis_client.py      # Async Redis pool (auto RESP2/3)
 ├── llm.py               # LiteLLM wrapper (swap providers via env)
+├── seed.py              # 7 demo users: Alexis, Haley, Leo, Maya, Jordan, Priya, Marcus
 ├── auth/
 │   ├── oauth.py         # Authlib Google OAuth
-│   └── router.py        # /auth/google, /auth/callback, /auth/me
+│   └── router.py        # /auth/google, /auth/callback, /auth/me, /auth/dev-login
 ├── users/
 │   └── router.py        # /users/me, /users/{id}
 ├── rooms/
@@ -45,24 +47,54 @@ app/
 ├── chat/
 │   ├── manager.py       # WebSocket ConnectionManager
 │   └── router.py        # WS /ws/rooms/{room_id}
+├── arena/
+│   └── router.py        # Arena batch mode endpoints
 └── agents/
-    ├── prompts.py        # Twin persona + vibe scoring prompts
-    ├── engine.py         # Agent conversation loop
+    ├── prompts.py        # Twin persona + match card scoring prompts
+    ├── engine.py         # Agent conversation loop (chatroom mode)
+    ├── arena.py          # Arena batch engine (speed-date all agents)
     └── scorer.py         # Post-conversation vibe scoring
 #+end_example
 
 *** API endpoints
+
+**** Auth
+| Method | Path              | Description                              |
+|--------+-------------------+------------------------------------------|
+| GET    | /auth/google      | Start Google OAuth flow                  |
+| GET    | /auth/callback    | OAuth callback -> JWT cookie + redirect  |
+| GET    | /auth/me          | Current user from JWT                    |
+| POST   | /auth/dev-login   | Dev shortcut: create/find user, get JWT  |
+| POST   | /auth/logout      | Clear cookie                             |
+
+~POST /auth/dev-login?name=Alexis~ — returns JWT for seeded demo user.
+~POST /auth/dev-login?name=NewUser&persona=...~ — creates a new user.
+
+**** Users
+| Method | Path          | Description          |
+|--------+---------------+----------------------|
+| GET    | /users/me     | Get profile          |
+| PUT    | /users/me     | Update name, persona |
+| GET    | /users/{id}   | Public profile       |
+
+**** Arena (batch mode — primary demo flow)
+| Method | Path                              | Description                           |
+|--------+-----------------------------------+---------------------------------------|
+| POST   | /arena/start?mode=hackathon       | Run agent against all others, ranked  |
+| GET    | /arena/results                    | Fetch latest match cards              |
+| GET    | /arena/conversation/{convo_id}    | Eavesdrop on a specific arena convo   |
+
+~POST /arena/start~ runs your agent in short (8-turn) parallel conversations
+with all other users, then scores each and returns ranked match cards with:
+score, headline, match_type, summary, overlaps, suggested_opener,
+conversation_highlights, common_interests.
+
+Modes: ~networking~, ~hackathon~, ~dating~, ~custom~.
+
+**** Rooms (chatroom mode — live conversations)
 | Method | Path                       | Description                         |
 |--------+----------------------------+-------------------------------------|
-| GET    | /health                    | SQLite + Redis health check         |
-| GET    | /auth/google               | Start Google OAuth flow             |
-| GET    | /auth/callback             | OAuth callback → JWT                |
-| GET    | /auth/me                   | Current user                        |
-| POST   | /auth/logout               | Clear cookie                        |
-| GET    | /users/me                  | Get profile                         |
-| PUT    | /users/me                  | Update name, persona                |
-| GET    | /users/{id}                | Public profile                      |
-| POST   | /rooms/matchmake           | Join matchmaking queue              |
+| POST   | /rooms/matchmake           | Join matchmaking queue               |
 | GET    | /rooms/matchmake/status    | Poll match status                   |
 | GET    | /rooms                     | List user's rooms                   |
 | GET    | /rooms/{id}                | Room details + vibe score           |
@@ -70,6 +102,12 @@ app/
 | POST   | /rooms/{id}/takeover       | Human replaces agent                |
 | POST   | /rooms/{id}/complete       | End convo, trigger vibe scoring     |
 | WS     | /ws/rooms/{id}?token={jwt} | Real-time chat via Redis Pub/Sub    |
+
+**** Other
+| Method | Path    | Description               |
+|--------+---------+---------------------------|
+| GET    | /health | SQLite + Redis health     |
+| GET    | /docs   | Swagger UI (interactive)  |
 
 *** Redis data model
 | Key                       | Type   | Purpose                                  |
@@ -80,15 +118,36 @@ app/
 | matchmaking:queue         | List   | Users waiting to be paired                |
 | matchmaking:result:{uid}  | String | Match result (room_id), TTL 5min          |
 | room:{id}:events          | PubSub | Fan-out to WebSockets                     |
+| arena:{uid}:latest        | String | Latest arena results JSON, TTL 1hr        |
+| arena-convo:{id}          | Stream | Arena conversation messages, TTL 1hr      |
 
-*** Agent conversation loop
-1. Two users matched → room created → agent loop starts
-2. Each agent has system prompt built from user's persona
-3. Agents alternate turns, 3s delay for pacing
-4. Messages written to Redis Stream + published via Pub/Sub
-5. Human can take over at any time (flag in Redis hash)
-6. At max messages (20) or manual completion → vibe scoring
-7. Claude/GPT rates conversation 0-100 with summary
+*** Two interaction modes
+
+**** Arena (batch) — for the demo
+1. User enters arena
+2. Their agent has short conversations with all other agents (parallel)
+3. Each conversation scored into a rich match card
+4. Results returned ranked by score
+5. Frontend shows swipeable match cards with eavesdrop option
+
+**** Chatroom (live) — for deeper connection
+1. Two users matched via queue
+2. Agents chat in real-time (20 turns, 3s pacing)
+3. Messages stream via WebSocket + Redis Pub/Sub
+4. Human can take over at any time
+5. On completion, vibe scoring via LLM
+
+*** Demo users (auto-seeded)
+7 users with rich multi-paragraph personas:
+| Name    | Role                            |
+|---------+---------------------------------|
+| Alexis  | AI engineer, climber, builder   |
+| Haley   | Social/emotional product thinker|
+| Leo     | Backend/infra builder           |
+| Maya    | Product designer, UX thinker    |
+| Jordan  | Go-to-market, community         |
+| Priya   | AI researcher, knowledge systems|
+| Marcus  | Indie hacker, storyteller        |
 
 *** LLM provider config
 Provider is swappable via ~LLM_MODEL~ in ~.env~:
@@ -97,12 +156,44 @@ Provider is swappable via ~LLM_MODEL~ in ~.env~:
 - ~gpt-4o-mini~ (cheap testing)
 Powered by LiteLLM — supports 100+ providers.
 
+** Frontend Integration Guide
+
+*** Quick start for frontend devs
+#+begin_src bash
+# 1. Get a token for a demo user
+TOKEN=$(curl -s -X POST 'http://HOST:8000/auth/dev-login?name=Alexis' | jq -r .token)
+
+# 2. Run arena (takes ~30-60s)
+curl -X POST 'http://HOST:8000/arena/start?mode=hackathon' \
+  -H "Authorization: Bearer $TOKEN"
+
+# 3. Get match cards
+curl 'http://HOST:8000/arena/results' \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Eavesdrop on a conversation
+curl 'http://HOST:8000/arena/conversation/{convo_id}' \
+  -H "Authorization: Bearer $TOKEN"
+#+end_src
+
+*** Auth pattern
+- All endpoints except ~/health~, ~/docs~, ~/auth/google~, ~/auth/callback~ require auth
+- Pass JWT as ~Authorization: Bearer {token}~ header or ~access_token~ cookie
+- For WebSocket: pass as query param ~?token={jwt}~
+
+*** Key response types
+- ~MatchCard~: score, headline, match_type, summary, strongest_overlap, non_obvious_overlap, complementary_dynamic, suggested_opener, follow_up_questions, conversation_highlights, common_interests, opponent_id, opponent_name
+- ~ArenaResponse~: status, arena_id, match_cards[]
+- ~MessageRead~: id, sender_user_id, sender_name, role (agent/human), content, timestamp
+- ~UserRead~: id, name, email, avatar_url, persona
+
+Full schemas at ~/docs~.
+
 ** Infrastructure
 
 *** Redis
-- Dev: local Redis 5.0.3 (auto-falls back to RESP2)
+- Dev: local Redis (auto-falls back to RESP2 for older versions)
 - Prod: Redis Cloud 8.x (us-east-1)
-  - Endpoint: redis-11449.c62.us-east-1-4.ec2.cloud.redislabs.com:11449
 - Switch via ~REDIS_URL~ in ~.env~
 
 *** Running locally
@@ -111,10 +202,10 @@ Powered by LiteLLM — supports 100+ providers.
 redis-server --daemonize yes
 
 # Install deps
-source .venv/bin/activate
+uv venv && source .venv/bin/activate
 uv pip install -e .
 
-# Run
+# Run (auto-seeds 7 demo users)
 uvicorn app.main:app --reload
 # Docs at http://localhost:8000/docs
 #+end_src
@@ -123,6 +214,7 @@ uvicorn app.main:app --reload
 
 *** DONE Project scaffolding + FastAPI skeleton
 *** DONE Google OAuth + JWT auth
+*** DONE Dev login shortcut (bypass OAuth for testing)
 *** DONE User profiles + persona storage
 *** DONE Redis-based matchmaking queue
 *** DONE Agent conversation engine (Claude/GPT via LiteLLM)
@@ -130,20 +222,21 @@ uvicorn app.main:app --reload
 *** DONE Human takeover flow
 *** DONE Vibe scoring
 *** DONE LLM provider abstraction (LiteLLM)
-*** TODO Dev login shortcut (bypass OAuth for testing)
-*** TODO Google OAuth credentials
-*** TODO Anthropic API key
-*** TODO End-to-end test with two profiles
+*** DONE Arena batch mode with rich match cards
+*** DONE 7 demo users with rich personas
+*** DONE End-to-end test (arena + chatroom)
 *** TODO Frontend (Next.js) — other team members
+*** TODO Google OAuth on prod domain
 *** TODO Prompt tuning for better twin personalities
 *** TODO Explore: LangCache for Redis-based LLM caching
 *** TODO Explore: agent memory / context persistence
-*** TODO Deploy (Vercel frontend + Railway/Render backend)
+*** TODO Deploy frontend
 *** TODO Demo prep + narrative
 
 ** Team notes
 - Repo: https://github.com/xinyuhwang/Twinder
-- Domain: twindr (TBD, not priority)
+- Domain: twindr (setting up)
+- Dev server: DO droplet (backend running)
 - Redis is a hackathon sponsor — bonus points for usage
 - Targeting: compelling live demo + clear narrative
-- MVP demo: create twin on stage → watch agents chat → see matches
+- Demo flow: enter arena -> agents speed-date -> swipeable match cards -> eavesdrop -> meet

@@ -6,7 +6,7 @@ import { api, RoomRead, MessageRead } from '@/lib/api';
 import { ArrowLeft, Send } from 'lucide-react';
 
 interface WsMessage {
-  type: 'message' | 'room_completed' | 'human_takeover' | 'ping';
+  type: 'message' | 'room_completed' | 'human_takeover' | 'vibe_score' | 'ping';
   data?: {
     sender_user_id?: string;
     sender_name?: string;
@@ -16,6 +16,9 @@ interface WsMessage {
     room_id?: string;
     user_id?: string;
     user_name?: string;
+    score?: number;
+    summary?: string;
+    common_interests?: string[];
   };
 }
 
@@ -67,9 +70,11 @@ function MessageBubble({ msg, isOwn }: { msg: MessageRead; isOwn: boolean }) {
 
 function VibeResults({
   room,
+  commonInterests,
   onBack,
 }: {
   room: RoomRead;
+  commonInterests: string[];
   onBack: () => void;
 }) {
   const score = room.vibe_score ?? 0;
@@ -81,7 +86,7 @@ function VibeResults({
       : 'text-amber-400';
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0a0a0f]/95 flex flex-col items-center justify-center px-6 gap-8 text-center">
+    <div className="fixed inset-0 z-50 bg-[#0a0a0f]/95 flex flex-col items-center justify-center px-6 gap-6 text-center overflow-y-auto py-12">
       <div className="space-y-2">
         <div className="text-5xl">✨</div>
         <h2 className="text-3xl font-bold text-white">Vibe Score</h2>
@@ -92,6 +97,19 @@ function VibeResults({
         <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-left w-full max-w-sm">
           <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">What your twins found</p>
           <p className="text-sm text-zinc-300 leading-relaxed">{room.vibe_summary}</p>
+        </div>
+      )}
+
+      {commonInterests.length > 0 && (
+        <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-left w-full max-w-sm">
+          <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Common interests</p>
+          <div className="flex flex-wrap gap-2">
+            {commonInterests.map(interest => (
+              <span key={interest} className="text-xs px-3 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25">
+                {interest}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
@@ -114,6 +132,7 @@ export default function RoomPage() {
   const [messages, setMessages] = useState<MessageRead[]>([]);
   const [tookOver, setTookOver] = useState(false);
   const [inputText, setInputText] = useState('');
+  const [commonInterests, setCommonInterests] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [takingOver, setTakingOver] = useState(false);
@@ -172,11 +191,21 @@ export default function RoomPage() {
           };
           setMessages(prev => [...prev, newMsg]);
         } else if (msg.type === 'room_completed') {
-          // Reload room to get vibe score
           api.getRoom(token, roomId).then(r => {
             setRoom(r);
             setShowResults(true);
           });
+        } else if (msg.type === 'vibe_score' && msg.data) {
+          // Scorer finished — update room inline without a round-trip
+          if (msg.data.common_interests) {
+            setCommonInterests(msg.data.common_interests);
+          }
+          setRoom(prev => prev ? {
+            ...prev,
+            vibe_score: msg.data!.score ?? prev.vibe_score,
+            vibe_summary: msg.data!.summary ?? prev.vibe_summary,
+          } : prev);
+          setShowResults(true);
         } else if (msg.type === 'human_takeover') {
           setTookOver(true);
         }
@@ -277,7 +306,7 @@ export default function RoomPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {showResults && room && (
-        <VibeResults room={room} onBack={() => router.push('/demo')} />
+        <VibeResults room={room} commonInterests={commonInterests} onBack={() => router.push('/demo')} />
       )}
 
       {/* Header */}

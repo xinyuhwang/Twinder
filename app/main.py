@@ -12,6 +12,8 @@ from app.redis_client import close_redis, get_redis, init_redis
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db()
+    from app.seed import seed_demo_users
+    seed_demo_users()
     await init_redis()
     # Verify Redis connection
     r = get_redis()
@@ -35,6 +37,7 @@ app.add_middleware(
 )
 
 # Routers
+from app.arena.router import router as arena_router
 from app.auth.router import router as auth_router
 from app.chat.router import router as chat_router
 from app.rooms.router import router as rooms_router
@@ -44,6 +47,7 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(rooms_router)
 app.include_router(chat_router)
+app.include_router(arena_router)
 
 
 @app.get("/health")

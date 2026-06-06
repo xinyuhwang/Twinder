@@ -35,7 +35,9 @@ async def run_conversation(room_id: str):
     system_prompts = {}
     for user in users:
         persona = user.persona or f"{user.name} — no detailed profile provided yet."
-        system_prompts[user.id] = TWIN_SYSTEM_PROMPT.format(name=user.name, persona=persona)
+        system_prompts[user.id] = TWIN_SYSTEM_PROMPT.format(
+            name=user.name, persona=persona, mode="networking"
+        )
 
     turn_order = [users[0], users[1]]
     is_first_message = True
@@ -124,7 +126,7 @@ async def respond_as_agent(room_id: str, agent_user_id: int):
     users = [session.get(User, p.user_id) for p in participants if session.get(User, p.user_id)]
 
     persona = user.persona or f"{user.name} — no detailed profile provided yet."
-    system = TWIN_SYSTEM_PROMPT.format(name=user.name, persona=persona)
+    system = TWIN_SYSTEM_PROMPT.format(name=user.name, persona=persona, mode="networking")
 
     conversation = await _build_messages(room_id, agent_user_id, users, False)
 

@@ -87,7 +87,7 @@ async def dev_login(
         session.add(user)
         session.commit()
         session.refresh(user)
-    elif persona:
+    elif persona and not user.persona:
         user.persona = persona
         session.add(user)
         session.commit()

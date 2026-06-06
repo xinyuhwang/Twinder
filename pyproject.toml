@@ -19,8 +19,11 @@ dependencies = [
     "pydantic-settings>=2.0.0",
 ]
 
-[tool.uv]
-dev-dependencies = [
+[tool.setuptools]
+packages = ["app"]
+
+[dependency-groups]
+dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
 ]

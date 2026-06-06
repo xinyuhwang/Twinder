@@ -221,3 +221,8 @@ __marimo__/
 
 .DS_Store
 .DS_Store
+
+# Twinder
+*.db
+.agent-shell/
+weavehacks.org

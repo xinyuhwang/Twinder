@@ -1,0 +1,149 @@
+* Twinder — Digital Twins for Agent-to-Agent Networking
+WeaveHacks 4 | June 2026 | https://github.com/xinyuhwang/Twinder
+
+** Concept
+Your AI digital twin networks on your behalf. Built from your "second brain"
+(interests, personality, experience), your twin chats with other twins in a
+virtual room — like a networking event that runs while you sleep. The best
+conversations surface as matches, ranked by "vibe score." Then you meet IRL.
+
+*** Why it matters
+- Networking relies on serendipity; introverts miss connections
+- Your twin can talk to everyone — you only meet the best matches
+- Agents start the conversation; humans can drop in and continue it
+- Works for professional networking, dating, community building
+
+** What's Built (backend)
+
+*** Tech stack
+- FastAPI + uvicorn (async Python)
+- SQLModel (SQLAlchemy + Pydantic)
+- Redis (Streams, Pub/Sub, Hashes) — sponsor integration
+- LiteLLM (provider-agnostic LLM calls: Claude, GPT-4o, etc.)
+- Google OAuth + JWT auth
+- SQLite for persistence
+
+*** Project structure
+#+begin_example
+app/
+├── main.py              # FastAPI app, lifespan, CORS
+├── config.py            # Pydantic Settings (.env)
+├── deps.py              # Auth dependency (JWT)
+├── database.py          # SQLite engine
+├── models.py            # User, Room, RoomParticipant
+├── schemas.py           # Request/response models
+├── redis_client.py      # Async Redis pool (auto RESP2/3)
+├── llm.py               # LiteLLM wrapper (swap providers via env)
+├── auth/
+│   ├── oauth.py         # Authlib Google OAuth
+│   └── router.py        # /auth/google, /auth/callback, /auth/me
+├── users/
+│   └── router.py        # /users/me, /users/{id}
+├── rooms/
+│   ├── router.py        # Room CRUD, matchmaking, takeover, completion
+│   └── matchmaker.py    # Redis list-based pairing
+├── chat/
+│   ├── manager.py       # WebSocket ConnectionManager
+│   └── router.py        # WS /ws/rooms/{room_id}
+└── agents/
+    ├── prompts.py        # Twin persona + vibe scoring prompts
+    ├── engine.py         # Agent conversation loop
+    └── scorer.py         # Post-conversation vibe scoring
+#+end_example
+
+*** API endpoints
+| Method | Path                       | Description                         |
+|--------+----------------------------+-------------------------------------|
+| GET    | /health                    | SQLite + Redis health check         |
+| GET    | /auth/google               | Start Google OAuth flow             |
+| GET    | /auth/callback             | OAuth callback → JWT                |
+| GET    | /auth/me                   | Current user                        |
+| POST   | /auth/logout               | Clear cookie                        |
+| GET    | /users/me                  | Get profile                         |
+| PUT    | /users/me                  | Update name, persona                |
+| GET    | /users/{id}                | Public profile                      |
+| POST   | /rooms/matchmake           | Join matchmaking queue              |
+| GET    | /rooms/matchmake/status    | Poll match status                   |
+| GET    | /rooms                     | List user's rooms                   |
+| GET    | /rooms/{id}                | Room details + vibe score           |
+| GET    | /rooms/{id}/messages       | Message history (Redis Stream)      |
+| POST   | /rooms/{id}/takeover       | Human replaces agent                |
+| POST   | /rooms/{id}/complete       | End convo, trigger vibe scoring     |
+| WS     | /ws/rooms/{id}?token={jwt} | Real-time chat via Redis Pub/Sub    |
+
+*** Redis data model
+| Key                       | Type   | Purpose                                  |
+|---------------------------+--------+------------------------------------------|
+| room:{id}:messages        | Stream | Message history (sender, role, content)   |
+| room:{id}:state           | Hash   | Turn state, msg count, human overrides    |
+| rooms:active              | Set    | Active room IDs                           |
+| matchmaking:queue         | List   | Users waiting to be paired                |
+| matchmaking:result:{uid}  | String | Match result (room_id), TTL 5min          |
+| room:{id}:events          | PubSub | Fan-out to WebSockets                     |
+
+*** Agent conversation loop
+1. Two users matched → room created → agent loop starts
+2. Each agent has system prompt built from user's persona
+3. Agents alternate turns, 3s delay for pacing
+4. Messages written to Redis Stream + published via Pub/Sub
+5. Human can take over at any time (flag in Redis hash)
+6. At max messages (20) or manual completion → vibe scoring
+7. Claude/GPT rates conversation 0-100 with summary
+
+*** LLM provider config
+Provider is swappable via ~LLM_MODEL~ in ~.env~:
+- ~anthropic/claude-sonnet-4-20250514~ (Claude)
+- ~gpt-4o~ (OpenAI)
+- ~gpt-4o-mini~ (cheap testing)
+Powered by LiteLLM — supports 100+ providers.
+
+** Infrastructure
+
+*** Redis
+- Dev: local Redis 5.0.3 (auto-falls back to RESP2)
+- Prod: Redis Cloud 8.x (us-east-1)
+  - Endpoint: redis-11449.c62.us-east-1-4.ec2.cloud.redislabs.com:11449
+- Switch via ~REDIS_URL~ in ~.env~
+
+*** Running locally
+#+begin_src bash
+# Start Redis (if using local)
+redis-server --daemonize yes
+
+# Install deps
+source .venv/bin/activate
+uv pip install -e .
+
+# Run
+uvicorn app.main:app --reload
+# Docs at http://localhost:8000/docs
+#+end_src
+
+** Plan / TODO
+
+*** DONE Project scaffolding + FastAPI skeleton
+*** DONE Google OAuth + JWT auth
+*** DONE User profiles + persona storage
+*** DONE Redis-based matchmaking queue
+*** DONE Agent conversation engine (Claude/GPT via LiteLLM)
+*** DONE WebSocket real-time chat with Redis Pub/Sub
+*** DONE Human takeover flow
+*** DONE Vibe scoring
+*** DONE LLM provider abstraction (LiteLLM)
+*** TODO Dev login shortcut (bypass OAuth for testing)
+*** TODO Google OAuth credentials
+*** TODO Anthropic API key
+*** TODO End-to-end test with two profiles
+*** TODO Frontend (Next.js) — other team members
+*** TODO Prompt tuning for better twin personalities
+*** TODO Explore: LangCache for Redis-based LLM caching
+*** TODO Explore: agent memory / context persistence
+*** TODO Deploy (Vercel frontend + Railway/Render backend)
+*** TODO Demo prep + narrative
+
+** Team notes
+- Repo: https://github.com/xinyuhwang/Twinder
+- Domain: twindr (TBD, not priority)
+- Redis is a hackathon sponsor — bonus points for usage
+- Targeting: compelling live demo + clear narrative
+- MVP demo: create twin on stage → watch agents chat → see matches

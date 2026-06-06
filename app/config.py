@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
     database_url: str = "sqlite:///./twinder.db"
     frontend_url: str = "http://localhost:3000"
+    weave_enabled: bool = False
+    wandb_project: str = "twinder"
+    wandb_entity: str = ""
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

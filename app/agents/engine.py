@@ -6,7 +6,21 @@ from app.agents.prompts import TWIN_OPENER, TWIN_SYSTEM_PROMPT
 from app.database import get_session
 from app.llm import chat
 from app.models import Room, RoomParticipant, User
+from app.observability import op
 from app.redis_client import get_redis
+
+
+@op(name="generate_agent_turn")
+async def _generate_turn(
+    system_prompt: str,
+    conversation: list[dict],
+    room_id: str,
+    sender_user_id: int,
+) -> str:
+    try:
+        return await chat(messages=conversation, system=system_prompt)
+    except Exception as e:
+        return f"[Agent error: {e}]"
 
 
 async def run_conversation(room_id: str):
@@ -66,13 +80,12 @@ async def run_conversation(room_id: str):
         # Build messages for this agent's perspective
         conversation = await _build_messages(room_id, current_user.id, users, is_first_message)
 
-        try:
-            content = await chat(
-                messages=conversation,
-                system=system_prompts[current_user.id],
-            )
-        except Exception as e:
-            content = f"[Agent error: {e}]"
+        content = await _generate_turn(
+            system_prompts[current_user.id],
+            conversation,
+            room_id,
+            current_user.id,
+        )
 
         # Write to Redis Stream
         now = datetime.now(timezone.utc).isoformat()
@@ -109,6 +122,7 @@ async def run_conversation(room_id: str):
     session.close()
 
 
+@op(name="respond_as_agent")
 async def respond_as_agent(room_id: str, agent_user_id: int):
     """Generate a single agent response (used when human sends a message and the other side is still an agent)."""
     r = get_redis()
@@ -130,10 +144,7 @@ async def respond_as_agent(room_id: str, agent_user_id: int):
 
     conversation = await _build_messages(room_id, agent_user_id, users, False)
 
-    try:
-        content = await chat(messages=conversation, system=system)
-    except Exception as e:
-        content = f"[Agent error: {e}]"
+    content = await _generate_turn(system, conversation, room_id, agent_user_id)
 
     now = datetime.now(timezone.utc).isoformat()
     await r.xadd(f"room:{room_id}:messages", {

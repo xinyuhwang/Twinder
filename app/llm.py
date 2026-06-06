@@ -1,8 +1,10 @@
 from litellm import acompletion
 
 from app.config import settings
+from app.observability import op
 
 
+@op(name="llm.chat")
 async def chat(
     messages: list[dict],
     system: str | None = None,
@@ -16,6 +18,7 @@ async def chat(
         "model": model,
         "messages": messages,
         "max_tokens": max_tokens,
+        "api_key": settings.anthropic_api_key or None,
     }
 
     # litellm handles system prompts differently per provider,

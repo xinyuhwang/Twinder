@@ -5,9 +5,11 @@ from app.agents.prompts import VIBE_SCORING_PROMPT
 from app.database import get_session
 from app.llm import chat
 from app.models import Room
+from app.observability import op
 from app.redis_client import get_redis
 
 
+@op(name="score_conversation")
 async def score_conversation(room_id: str):
     """Score a completed conversation using Claude."""
     r = get_redis()

@@ -6,11 +6,13 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
 from app.database import create_db
+from app.observability import init_weave
 from app.redis_client import close_redis, get_redis, init_redis
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_weave()
     create_db()
     from app.seed import seed_demo_users
     seed_demo_users()

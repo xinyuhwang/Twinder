@@ -75,7 +75,7 @@ async def list_rooms(
             users = [session.get(User, p.user_id) for p in participants]
             rooms.append(RoomRead(
                 **room.model_dump(),
-                participants=[UserRead.model_validate(u) for u in users if u],
+                participants=[UserRead.model_validate(u, from_attributes=True) for u in users if u],
             ))
     return rooms
 
@@ -96,7 +96,7 @@ async def get_room(
     users = [session.get(User, p.user_id) for p in participants]
     return RoomRead(
         **room.model_dump(),
-        participants=[UserRead.model_validate(u) for u in users if u],
+        participants=[UserRead.model_validate(u, from_attributes=True) for u in users if u],
     )
 
 

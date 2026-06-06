@@ -188,10 +188,10 @@ Replace the inline `try/await chat(...)` block at `engine.py:67-74` with a call 
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Dependencies resolve: `uv pip install -e .`
-- [ ] App imports cleanly with flag off: `WEAVE_ENABLED=false python -c "import app.main"`
-- [ ] App imports cleanly with flag on but no key handled gracefully: `WEAVE_ENABLED=true python -c "import app.observability as o; o.init_weave()"` (expect it to either init or raise a clear W&B auth error, not an import/attribute error)
-- [ ] `op` is pass-through when disabled: a unit check that `app.observability.op(lambda x: x)` returns the original function when `WEAVE_ENABLED=false`
+- [x] Dependencies resolve: `uv pip install -e .`
+- [x] App imports cleanly with flag off: `WEAVE_ENABLED=false python -c "import app.main"`
+- [x] App imports cleanly with flag on but no key handled gracefully: `WEAVE_ENABLED=true python -c "import app.observability as o; o.init_weave()"` (expect it to either init or raise a clear W&B auth error, not an import/attribute error)
+- [x] `op` is pass-through when disabled: a unit check that `app.observability.op(lambda x: x)` returns the original function when `WEAVE_ENABLED=false`
 - [ ] Server boots both ways: `WEAVE_ENABLED=false uvicorn app.main:app` and `WEAVE_ENABLED=true ... uvicorn app.main:app` start without error
 - [ ] `GET /health` returns 200 in both modes
 

@@ -96,6 +96,9 @@ export const api = {
   getArenaResults: (token: string) =>
     request<ArenaResponse>('/arena/results', { headers: authHeaders(token) }),
 
+  getArenaStatus: (token: string) =>
+    request<{ status: string; count: number }>('/arena/status', { headers: authHeaders(token) }),
+
   getArenaConversation: (token: string, conversationId: string) =>
     request<MessageRead[]>(`/arena/conversation/${encodeURIComponent(conversationId)}`, {
       headers: authHeaders(token),

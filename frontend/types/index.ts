@@ -11,6 +11,8 @@ export interface MatchCard {
   headline: string;
   match_type: string;
   summary: string;
+  tip?: string | null;
+  fun_facts?: string[];
   strongest_overlap: string | null;
   non_obvious_overlap: string | null;
   complementary_dynamic: string | null;
@@ -30,6 +32,11 @@ export interface ArenaResponse {
   status: string;
   arena_id: string | null;
   match_cards: MatchCard[];
+}
+
+export interface ArenaStatusResponse {
+  status: string;
+  count: number;
 }
 
 export interface TwinPreview {

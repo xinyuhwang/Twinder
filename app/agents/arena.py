@@ -2,7 +2,6 @@ import asyncio
 import json
 import re
 import uuid
-from datetime import datetime, timezone
 
 from sqlmodel import select
 
@@ -16,6 +15,22 @@ from app.redis_client import get_redis
 ARENA_TURNS = 8  # 4 exchanges each
 
 
+def _flip_card_perspective(card: dict, user_a: User, user_b: User) -> dict:
+    """Flip a cached match card from the other user's perspective."""
+    flipped = dict(card)
+    flipped["opponent_id"] = user_b.id
+    flipped["opponent_name"] = user_b.name
+    flipped["opponent_avatar"] = user_b.avatar_url
+    if flipped.get("openness_scores"):
+        scores = flipped["openness_scores"]
+        if user_a.name in scores and user_b.name in scores:
+            flipped["openness_scores"] = {
+                user_a.name: scores.get(user_b.name),
+                user_b.name: scores.get(user_a.name),
+            }
+    return flipped
+
+
 async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
     """Run one user's agent against all other users. Returns ranked match cards."""
     session = next(get_session())
@@ -24,8 +39,6 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
         session.close()
         return []
 
-    # Scope opponents to users in the same event (most recently joined event wins).
-    # Falls back to all users if the requesting user has no event enrollment.
     participant_row = session.exec(
         select(EventParticipant)
         .where(EventParticipant.user_id == user_id)
@@ -47,32 +60,35 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
         session.close()
         return []
 
-    # Run all conversations in parallel
-    tasks = [
-        _arena_conversation(user, opponent, mode)
-        for opponent in opponents
-    ]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    # Filter out errors, sort by score
-    match_cards = []
-    for result in results:
-        if isinstance(result, dict) and "score" in result:
-            match_cards.append(result)
-
-    match_cards.sort(key=lambda x: x.get("score", 0), reverse=True)
-
-    # Store results in Redis for retrieval
     r = get_redis()
-    arena_id = str(uuid.uuid4())
-    await r.set(
-        f"arena:{user_id}:latest",
-        json.dumps({"arena_id": arena_id, "match_cards": match_cards}),
-        ex=3600,
-    )
+    result_key = f"arena:{user_id}:latest"
+    status_key = f"arena:{user_id}:status"
 
-    # Also store individual arena conversations
+    raw = await r.get(result_key)
+    arena_id = json.loads(raw).get("arena_id") if raw else str(uuid.uuid4())
+    await r.set(status_key, "running", ex=3600)
+
+    async def run_one(opponent: User) -> None:
+        card = await _arena_conversation(user, opponent, mode)
+        if not isinstance(card, dict) or "score" not in card:
+            return
+        current_raw = await r.get(result_key)
+        current = json.loads(current_raw) if current_raw else {"arena_id": arena_id, "match_cards": []}
+        cards = current.get("match_cards", [])
+        cards.append(card)
+        cards.sort(key=lambda x: x.get("score", 0), reverse=True)
+        await r.set(
+            result_key,
+            json.dumps({"arena_id": current.get("arena_id", arena_id), "match_cards": cards}),
+            ex=3600,
+        )
+
+    await asyncio.gather(*[run_one(opp) for opp in opponents], return_exceptions=True)
+
+    final_raw = await r.get(result_key)
+    match_cards = json.loads(final_raw).get("match_cards", []) if final_raw else []
     await r.set(f"arena:{arena_id}:results", json.dumps(match_cards), ex=3600)
+    await r.set(status_key, "completed", ex=3600)
 
     session.close()
     return match_cards
@@ -80,11 +96,18 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
 
 async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
     """Run a short conversation between two agents and score it."""
+    r = get_redis()
+    pair_key = f"arena-pair:{min(user_a.id, user_b.id)}:{max(user_a.id, user_b.id)}"
+    cached_raw = await r.get(pair_key)
+    if cached_raw:
+        card = json.loads(cached_raw)
+        if card.get("opponent_id") != user_b.id:
+            card = _flip_card_perspective(card, user_a, user_b)
+        return card
+
     persona_a = user_a.persona or f"{user_a.name} — no detailed profile provided yet."
     persona_b = user_b.persona or f"{user_b.name} — no detailed profile provided yet."
 
-    # Fold the divergent-thinking / openness signal into the persona text so
-    # both the agents and the scorer can reason about it.
     line_a = openness_line(user_a.dat_score)
     line_b = openness_line(user_b.dat_score)
     if line_a:
@@ -96,16 +119,13 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
     system_a = TWIN_SYSTEM_PROMPT.format(name=user_a.name, persona=persona_a, mode_guidelines=mode_guidelines)
     system_b = TWIN_SYSTEM_PROMPT.format(name=user_b.name, persona=persona_b, mode_guidelines=mode_guidelines)
 
-    # Store conversation in Redis Stream for potential eavesdrop later
-    r = get_redis()
     convo_id = f"arena-convo:{uuid.uuid4()}"
 
-    messages_a: list[dict] = []  # from A's perspective
-    messages_b: list[dict] = []  # from B's perspective
+    messages_a: list[dict] = []
+    messages_b: list[dict] = []
 
     for turn in range(ARENA_TURNS):
         if turn % 2 == 0:
-            # A's turn
             if turn == 0:
                 prompt_msgs = [{"role": "user", "content": TWIN_OPENER.format(mode=mode)}]
             else:
@@ -122,7 +142,6 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
                 "turn": str(turn),
             })
         else:
-            # B's turn
             prompt_msgs = messages_b
             content = await chat(messages=prompt_msgs, system=system_b)
 
@@ -136,15 +155,12 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
                 "turn": str(turn),
             })
 
-    # Set TTL on conversation stream
     await r.expire(convo_id, 3600)
 
-    # Format conversation for scoring
     raw = await r.xrange(convo_id)
     lines = [f"{f['sender_name']}: {f['content']}" for _, f in raw]
     conversation_text = "\n".join(lines)
 
-    # Generate match card
     scoring_prompt = MATCH_CARD_SCORING_PROMPT.format(
         user_a_name=user_a.name,
         user_a_persona=persona_a,
@@ -168,9 +184,6 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
             "common_interests": [],
         }
 
-    # Blend in openness compatibility (similarity of divergent-thinking scores).
-    # People with closer DAT scores are treated as more compatible on openness
-    # to experience, which research links to relationship/collaboration fit.
     compat = openness_compatibility(user_a.dat_score, user_b.dat_score)
     if compat is not None:
         base_score = float(match_card.get("score", 50))
@@ -182,11 +195,12 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
             user_b.name: user_b.dat_score,
         }
 
-    # Add metadata
     match_card["opponent_id"] = user_b.id
     match_card["opponent_name"] = user_b.name
     match_card["opponent_avatar"] = user_b.avatar_url
     match_card["conversation_id"] = convo_id
+
+    await r.set(pair_key, json.dumps(match_card), ex=86400)
 
     return match_card
 
@@ -199,12 +213,10 @@ def _parse_json(text: str) -> dict:
     except json.JSONDecodeError:
         pass
 
-    # Try extracting from ```json ... ``` or ``` ... ```
     match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
     if match:
         return json.loads(match.group(1).strip())
 
-    # Try finding first { ... } block
     start = text.find("{")
     end = text.rfind("}") + 1
     if start >= 0 and end > start:

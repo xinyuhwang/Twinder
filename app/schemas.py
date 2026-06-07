@@ -54,6 +54,8 @@ class MatchCard(BaseModel):
     headline: str = ""
     match_type: str = ""
     summary: str = ""
+    tip: Optional[str] = None
+    fun_facts: list[str] = []
     strongest_overlap: Optional[str] = None
     non_obvious_overlap: Optional[str] = None
     complementary_dynamic: Optional[str] = None
@@ -67,6 +69,11 @@ class MatchCard(BaseModel):
     opponent_name: str
     opponent_avatar: Optional[str] = None
     conversation_id: Optional[str] = None
+
+
+class ArenaStatusResponse(BaseModel):
+    status: str  # running, completed
+    count: int = 0
 
 
 class IntakeRequest(BaseModel):

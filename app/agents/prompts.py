@@ -88,10 +88,12 @@ Generate a match card for {user_a_name} about {user_b_name}. Return a JSON objec
 - "headline": a punchy 5-10 word headline (e.g. "Fellow climber building AI for biotech"). Make it specific to THESE two people.
 - "match_type": one of "kindred_spirit", "complementary_skills", "shared_mission", "creative_spark", "unexpected_connection"
 - "summary": 2-3 sentences on why they should meet. Be specific — reference actual things from the conversation.
+- "tip": one short, specific action tip for the conversation (e.g. "Ask Priya about spaced repetition systems" — reference something from the actual conversation)
+- "fun_facts": exactly 3 short bullet-style facts about {user_b_name} that would intrigue {user_a_name} (drawn from the conversation and profile — be concrete, not generic)
 - "strongest_overlap": the most obvious shared interest or value
 - "non_obvious_overlap": a surprising or deeper connection the conversation revealed
 - "complementary_dynamic": how they could specifically help each other
-- "suggested_opener": a natural, specific opening line for when they meet IRL. Reference something from the conversation.
+- "suggested_opener": a natural, specific opening line for when they meet IRL. Reference something from the conversation. (Longer backup option if the human wants a full opener.)
 - "follow_up_questions": 2-3 questions {user_a_name} could ask {user_b_name}
 - "conversation_highlights": 2-3 of the most interesting exchanges (each as {{"speaker": "name", "text": "quote"}})
 - "common_interests": list of shared interests

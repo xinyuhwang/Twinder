@@ -1,23 +1,20 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { localStore } from '@/lib/local-store';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Avatar';
-import { MockCopilotPanel } from '@/components/MockCopilotPanel';
 import { MeetConfirmationScreen } from '@/components/MeetConfirmationScreen';
 import { MobileShell } from '@/components/MobileShell';
-import { composeMatchCopilot } from '@/lib/copilot';
 import type { MatchCard } from '@/types';
 import {
   Heart,
   X,
-  Bookmark,
   MessageCircle,
   ChevronRight,
-  Sparkles,
   Trophy,
+  Radio,
 } from 'lucide-react';
 
 function ScoreBadge({ score }: { score: number }) {
@@ -39,7 +36,6 @@ function SwipeCard({
   onPass,
   onSave,
   onMeet,
-  onAskWhy,
   onOpen,
   saved,
   met,
@@ -49,7 +45,6 @@ function SwipeCard({
   onPass: () => void;
   onSave: () => void;
   onMeet: () => void;
-  onAskWhy: () => void;
   onOpen: () => void;
   saved: boolean;
   met: boolean;
@@ -76,7 +71,6 @@ function SwipeCard({
       className={`absolute inset-0 cursor-grab active:cursor-grabbing select-none ${isTop ? 'z-10' : 'z-0'}`}
     >
       <div className="h-full rounded-3xl bg-zinc-900 border border-zinc-800 overflow-hidden flex flex-col shadow-xl">
-        {/* Swipe indicators */}
         {isTop && (
           <>
             <motion.div
@@ -94,7 +88,6 @@ function SwipeCard({
           </>
         )}
 
-        {/* Card header */}
         <div className="p-5 flex items-start gap-4">
           <Avatar name={card.opponent_name} size="lg" />
           <div className="flex-1 min-w-0 space-y-1">
@@ -116,15 +109,14 @@ function SwipeCard({
           </div>
         </div>
 
-        {/* Content */}
         <div className="px-5 pb-3 flex-1 space-y-3 overflow-hidden">
           <p className="text-sm font-semibold text-violet-300 leading-snug">{card.headline}</p>
           <p className="text-sm text-zinc-400 leading-relaxed line-clamp-3">{card.summary}</p>
 
-          {card.suggested_opener && (
+          {(card.tip || card.suggested_opener) && (
             <div className="p-3 rounded-2xl bg-zinc-800/60 border border-zinc-700/50">
-              <p className="text-xs text-zinc-500 mb-1">Suggested opener</p>
-              <p className="text-sm text-zinc-300 italic leading-snug">&quot;{card.suggested_opener}&quot;</p>
+              <p className="text-xs text-zinc-500 mb-1">Tip</p>
+              <p className="text-sm text-zinc-300 leading-snug">{card.tip ?? card.suggested_opener}</p>
             </div>
           )}
 
@@ -139,17 +131,15 @@ function SwipeCard({
           )}
         </div>
 
-        {/* Tap to open */}
         <button
           onClick={onOpen}
           className="mx-5 mb-3 flex items-center justify-center gap-1.5 py-2 text-xs text-zinc-500 hover:text-violet-400 transition-colors"
         >
-          View full match detail
+          Watch agent conversation
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
 
-        {/* Actions */}
-        <div className="px-5 pb-5 grid grid-cols-4 gap-2">
+        <div className="px-5 pb-5 grid grid-cols-2 gap-3">
           <button
             onClick={onPass}
             className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-zinc-800 hover:bg-red-500/20 border border-zinc-700 hover:border-red-500/30 transition-colors group"
@@ -157,22 +147,6 @@ function SwipeCard({
           >
             <X className="w-5 h-5 text-zinc-400 group-hover:text-red-400" />
             <span className="text-xs text-zinc-500 group-hover:text-red-400">Pass</span>
-          </button>
-          <button
-            onClick={onAskWhy}
-            className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-zinc-800 hover:bg-violet-500/20 border border-zinc-700 hover:border-violet-500/30 transition-colors group"
-            aria-label="Ask why"
-          >
-            <Sparkles className="w-5 h-5 text-zinc-400 group-hover:text-violet-400" />
-            <span className="text-xs text-zinc-500 group-hover:text-violet-400">Ask why</span>
-          </button>
-          <button
-            onClick={onSave}
-            className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-zinc-800 hover:bg-emerald-500/20 border border-zinc-700 hover:border-emerald-500/30 transition-colors group"
-            aria-label="Save"
-          >
-            <Bookmark className={`w-5 h-5 ${saved ? 'text-emerald-400 fill-emerald-400' : 'text-zinc-400 group-hover:text-emerald-400'}`} />
-            <span className={`text-xs ${saved ? 'text-emerald-400' : 'text-zinc-500 group-hover:text-emerald-400'}`}>Save</span>
           </button>
           <button
             onClick={onMeet}
@@ -188,14 +162,33 @@ function SwipeCard({
   );
 }
 
+function SwipeHintOverlay({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div className="absolute inset-0 z-20 flex items-end rounded-3xl bg-black/70 p-6">
+      <div className="w-full space-y-4 rounded-2xl border border-zinc-700 bg-zinc-900 p-5 text-center">
+        <p className="text-lg font-semibold text-white">Swipe to decide</p>
+        <p className="text-sm text-zinc-400">
+          Swipe right to save, left to pass. Tap the card for full details and to ask your agent why.
+        </p>
+        <button
+          onClick={onDismiss}
+          className="w-full rounded-xl bg-violet-600 py-3 font-semibold text-white transition-colors hover:bg-violet-500"
+        >
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Matches() {
   const router = useRouter();
   const [cards, setCards] = useState<MatchCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [copilotOpen, setCopilotOpen] = useState(false);
-  const [copilotResponse, setCopilotResponse] = useState<string | null>(null);
   const [meetCard, setMeetCard] = useState<MatchCard | null>(null);
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const savedIds = localStore.getSavedMatchIds();
   const metIds = localStore.getMetMatchIds();
@@ -232,6 +225,48 @@ export default function Matches() {
     load();
   }, [router]);
 
+  useEffect(() => {
+    const token = localStore.getToken();
+    if (!token || loading) return;
+
+    async function poll() {
+      try {
+        const [results, status] = await Promise.all([
+          api.getArenaResults(token!),
+          api.getArenaStatus(token!),
+        ]);
+        const incoming = results.match_cards ?? [];
+        if (incoming.length > 0) {
+          localStore.setArenaCards(incoming);
+          setCards(incoming);
+        }
+        if (status.status === 'completed' && pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      } catch {
+        // keep polling while arena may still be running
+      }
+    }
+
+    poll();
+    pollRef.current = setInterval(poll, 3000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [loading]);
+
+  useEffect(() => {
+    if (!loading && cards.length > 0 && !localStore.getSeenSwipeHint()) {
+      setShowSwipeHint(true);
+    }
+  }, [loading, cards.length]);
+
+  function dismissSwipeHint() {
+    localStore.setSeenSwipeHint(true);
+    setShowSwipeHint(false);
+  }
+
   function handlePass(id: number) {
     const ids = localStore.getPassedMatchIds();
     if (!ids.includes(id)) localStore.setPassedMatchIds([...ids, id]);
@@ -246,12 +281,6 @@ export default function Matches() {
 
   function handleMeet(card: MatchCard) {
     setMeetCard(card);
-  }
-
-  function handleCopilotPrompt(prompt: string) {
-    if (!activeCard) return;
-    const result = composeMatchCopilot(prompt, activeCard);
-    setCopilotResponse(result);
   }
 
   const activeCard = cards[currentIndex] ?? null;
@@ -271,7 +300,6 @@ export default function Matches() {
   return (
     <MobileShell>
       <div className="flex flex-col min-h-screen px-4 py-10 gap-4">
-        {/* Header */}
         <div className="flex items-center justify-between px-2">
           <div className="space-y-0.5">
             <h1 className="text-2xl font-bold text-white">Your matches</h1>
@@ -284,7 +312,6 @@ export default function Matches() {
           </div>
         </div>
 
-        {/* Card stack */}
         {activeCard ? (
           <div className="relative flex-1 min-h-[520px]">
             {nextCard && (
@@ -303,13 +330,10 @@ export default function Matches() {
                 onPass={() => handlePass(activeCard.opponent_id)}
                 onSave={() => handleSave(activeCard.opponent_id)}
                 onMeet={() => handleMeet(activeCard)}
-                onAskWhy={() => {
-                  setCopilotResponse(null);
-                  setCopilotOpen(true);
-                }}
-                onOpen={() => router.push(`/matches/${activeCard.opponent_id}`)}
+                onOpen={() => router.push(`/matches/${activeCard.opponent_id}/chat`)}
               />
             </AnimatePresence>
+            {showSwipeHint && <SwipeHintOverlay onDismiss={dismissSwipeHint} />}
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center py-12">
@@ -324,28 +348,38 @@ export default function Matches() {
                   : 'Run the arena again to find more connections.'}
               </p>
             </div>
-            <button
-              onClick={() => {
-                localStore.setArenaCards([]);
-                router.push('/arena');
-              }}
-              className="px-6 py-3 rounded-2xl bg-violet-600 text-white font-semibold hover:bg-violet-500 transition-colors"
-            >
-              Run arena again
-            </button>
+            <div className="flex w-full max-w-xs flex-col gap-2">
+              <button
+                onClick={() => {
+                  localStore.setArenaCards([]);
+                  router.push('/arena');
+                }}
+                className="rounded-2xl bg-violet-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-violet-500"
+              >
+                Run arena again
+              </button>
+              {savedIds.length > 0 && (
+                <button
+                  onClick={() => router.push('/saved')}
+                  className="rounded-2xl border border-zinc-800 bg-zinc-900 px-6 py-3 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
+                >
+                  View saved ({savedIds.length})
+                </button>
+              )}
+              <button
+                onClick={() => router.push('/live')}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-6 py-3 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/20"
+              >
+                <Radio className="h-4 w-4" />
+                Try a live conversation
+              </button>
+              <p className="text-xs text-zinc-600">
+                Live pairs you one-on-one in real time. Arena ranks everyone at once.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Copilot */}
-        <MockCopilotPanel
-          open={copilotOpen}
-          onClose={() => setCopilotOpen(false)}
-          surface="queue"
-          response={copilotResponse}
-          onPrompt={handleCopilotPrompt}
-        />
-
-        {/* Meet confirmation */}
         <AnimatePresence>
           {meetCard && (
             <MeetConfirmationScreen

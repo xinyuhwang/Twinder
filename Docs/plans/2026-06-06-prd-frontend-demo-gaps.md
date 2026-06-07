@@ -176,9 +176,9 @@ Add the two lightweight mocked routes: `/join` (event code + mode selection feed
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] `cd frontend && npx tsc --noEmit`
-- [ ] `cd frontend && npm run lint`
-- [ ] `cd frontend && npm run build`
+- [x] `cd frontend && npx tsc --noEmit`
+- [x] `cd frontend && npm run lint`
+- [x] `cd frontend && npm run build`
 
 #### Manual Verification:
 - [ ] `/join` sets mode and code in localStorage and continues into the flow.
@@ -217,9 +217,9 @@ Primary CTA "Approve twin" -> `/arena`. Secondary CTAs: "Edit voice" / "Edit pri
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] `cd frontend && npx tsc --noEmit`
-- [ ] `cd frontend && npm run lint`
-- [ ] `cd frontend && npm run build`
+- [x] `cd frontend && npx tsc --noEmit`
+- [x] `cd frontend && npm run lint`
+- [x] `cd frontend && npm run build`
 
 #### Manual Verification:
 - [ ] Paste-context path: posting to `/users/me/intake` returns a `TwinPreview` and the card renders it; no YAML/JSON visible.

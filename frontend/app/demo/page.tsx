@@ -24,10 +24,11 @@ export default function Demo() {
     try {
       const { token, user } = await api.devLogin(selectedPersona.name, selectedPersona.persona);
       localStore.setToken(token);
+      localStore.setAuthMethod('demo');
       localStore.setUserId(user.id);
       localStore.setUserName(user.name);
       localStore.setPersonaId(selectedId);
-      router.push('/onboarding');
+      router.push('/arena');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Is the backend running?');
       setJoining(false);

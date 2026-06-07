@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { startGoogleAuth } from '@/lib/auth';
 import { Zap, Users, MessageSquare } from 'lucide-react';
 
 export default function Landing() {
@@ -59,12 +60,12 @@ export default function Landing() {
         >
           Try the demo
         </Link>
-        <a
-          href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/google`}
+        <button
+          onClick={() => startGoogleAuth('/join')}
           className="block w-full text-center py-4 rounded-2xl bg-zinc-800 text-white font-semibold text-lg hover:bg-zinc-700 transition-colors border border-zinc-700"
         >
-          Sign in with Google
-        </a>
+          Join an event
+        </button>
         <p className="text-center text-xs text-zinc-600 pt-2">
           The agents talk first. The humans meet better.
         </p>

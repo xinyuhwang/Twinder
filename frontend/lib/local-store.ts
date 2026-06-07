@@ -1,13 +1,16 @@
-import type { EventMode, MatchCard, TwinPreview } from '@/types';
+import type { AuthMethod, EventMode, MatchCard, TwinPreview } from '@/types';
 
 const KEY = {
   token: 'twinder_token',
+  authMethod: 'twinder_auth_method',
   userId: 'twinder_user_id',
   userName: 'twinder_user_name',
   personaId: 'twinder_persona_id',
   currentRoomId: 'twinder_current_room_id',
   eventMode: 'twinder_event_mode',
   eventCode: 'twinder_event_code',
+  rawContext: 'twinder_raw_context',
+  skippedIntake: 'twinder_skipped_intake',
   onboardingAnswers: 'twinder_onboarding_answers',
   twinPreview: 'twinder_twin_preview',
   arenaCards: 'twinder_arena_cards',
@@ -35,6 +38,12 @@ export const localStore = {
   getToken: () => typeof window !== 'undefined' ? localStorage.getItem(KEY.token) : null,
   setToken: (v: string) => localStorage.setItem(KEY.token, v),
 
+  getAuthMethod: (): AuthMethod | null => {
+    const v = typeof window !== 'undefined' ? localStorage.getItem(KEY.authMethod) : null;
+    return v === 'google' || v === 'demo' ? v : null;
+  },
+  setAuthMethod: (v: AuthMethod) => localStorage.setItem(KEY.authMethod, v),
+
   getUserId: (): number | null => {
     const v = typeof window !== 'undefined' ? localStorage.getItem(KEY.userId) : null;
     return v ? parseInt(v, 10) : null;
@@ -59,6 +68,16 @@ export const localStore = {
 
   getEventCode: () => typeof window !== 'undefined' ? localStorage.getItem(KEY.eventCode) : null,
   setEventCode: (v: string) => localStorage.setItem(KEY.eventCode, v),
+
+  getRawContext: () =>
+    typeof window !== 'undefined' ? localStorage.getItem(KEY.rawContext) : null,
+  setRawContext: (v: string) => localStorage.setItem(KEY.rawContext, v),
+  clearRawContext: () => localStorage.removeItem(KEY.rawContext),
+
+  getSkippedIntake: (): boolean =>
+    typeof window !== 'undefined' && localStorage.getItem(KEY.skippedIntake) === 'true',
+  setSkippedIntake: (v: boolean) =>
+    localStorage.setItem(KEY.skippedIntake, v ? 'true' : 'false'),
 
   getOnboardingAnswers: (): Record<string, string> | null =>
     getJson<Record<string, string>>(KEY.onboardingAnswers),

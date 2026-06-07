@@ -5,6 +5,7 @@ import type {
   MatchmakeResponse,
   TwinPreview,
   ArenaResponse,
+  DatResult,
 } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -77,6 +78,13 @@ export const api = {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify(body),
+    }),
+
+  dat: (token: string, words: string[]) =>
+    request<DatResult>('/users/me/dat', {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ words }),
     }),
 
   startArena: (token: string, mode: string) =>

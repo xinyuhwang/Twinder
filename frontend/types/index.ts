@@ -1,4 +1,5 @@
 export type EventMode = 'hackathon' | 'networking' | 'dating' | 'custom';
+export type AuthMethod = 'google' | 'demo';
 
 export interface ConversationHighlight {
   speaker: string;
@@ -17,6 +18,8 @@ export interface MatchCard {
   follow_up_questions: string[];
   conversation_highlights: ConversationHighlight[];
   common_interests: string[];
+  openness_compatibility?: number | null;
+  openness_scores?: Record<string, number | null> | null;
   opponent_id: number;
   opponent_name: string;
   opponent_avatar: string | null;
@@ -33,6 +36,14 @@ export interface TwinPreview {
   public_safe_summary: string | null;
   looking_for: string[];
   interests: string[];
+}
+
+export interface DatResult {
+  score: number | null;
+  scored_words: string[];
+  valid_words: string[];
+  invalid_words: string[];
+  enough_words: boolean;
 }
 
 export interface UserRead {

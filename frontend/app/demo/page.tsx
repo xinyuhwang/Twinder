@@ -84,7 +84,10 @@ export default function Demo() {
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-zinc-500 truncate">{persona.role}</p>
+                <p className={`text-xs text-zinc-500 ${selectedId === persona.id ? '' : 'truncate'}`}>{persona.role}</p>
+                {selectedId === persona.id && (
+                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{persona.tagline}</p>
+                )}
               </div>
             </button>
           ))}

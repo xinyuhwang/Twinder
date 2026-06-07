@@ -59,6 +59,12 @@ app.include_router(rooms_router)
 app.include_router(chat_router)
 app.include_router(arena_router)
 
+from copilotkit.integrations.fastapi import add_fastapi_endpoint
+
+from app.copilot.sdk import create_copilot_sdk
+
+add_fastapi_endpoint(app, create_copilot_sdk(), "/copilotkit")
+
 
 @app.get("/health")
 async def health():

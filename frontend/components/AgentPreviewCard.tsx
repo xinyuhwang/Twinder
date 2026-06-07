@@ -1,8 +1,13 @@
 'use client';
 import { useState } from 'react';
+import {
+  useCopilotAction,
+  useCopilotAdditionalInstructions,
+  useCopilotReadable,
+} from '@copilotkit/react-core';
 import { Avatar } from '@/components/Avatar';
-import { MockCopilotPanel } from '@/components/MockCopilotPanel';
-import { composePreviewCopilot } from '@/lib/copilot';
+import { TwinderCopilotPanel } from '@/components/TwinderCopilotPanel';
+import { PREVIEW_COPILOT_INSTRUCTIONS } from '@/lib/copilot';
 import type { AgentPreviewDisplay } from '@/lib/preview';
 import { ArrowRight, Shield, Sparkles } from 'lucide-react';
 
@@ -21,21 +26,62 @@ export function AgentPreviewCard({
 }: AgentPreviewCardProps) {
   const [patch, setPatch] = useState<Partial<AgentPreviewDisplay>>({});
   const [copilotOpen, setCopilotOpen] = useState(false);
-  const [copilotResponse, setCopilotResponse] = useState<string | null>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const display = { ...preview, ...patch };
 
   function updateDisplay(next: AgentPreviewDisplay) {
     onPreviewChange?.(next);
   }
 
-  function handleCopilotPrompt(prompt: string) {
-    const result = composePreviewCopilot(prompt, display);
-    setCopilotResponse(result.message);
-    if (result.previewPatch) {
-      const next = { ...display, ...result.previewPatch };
-      setPatch(prev => ({ ...prev, ...result.previewPatch }));
+  useCopilotReadable({
+    description: 'Current twin preview display shown to the user',
+    value: display,
+  });
+
+  useCopilotAdditionalInstructions({
+    instructions: PREVIEW_COPILOT_INSTRUCTIONS,
+    available: 'enabled',
+  });
+
+  useCopilotAction({
+    name: 'apply_preview_edits',
+    description: 'Apply edited twin preview fields to the UI after a backend edit action.',
+    parameters: [
+      {
+        name: 'summary',
+        type: 'string',
+        description: 'Updated public-safe summary',
+        required: false,
+      },
+      {
+        name: 'agent_voice',
+        type: 'string',
+        description: 'Updated agent voice description',
+        required: false,
+      },
+      {
+        name: 'privacy_settings',
+        type: 'string[]',
+        description: 'Updated privacy settings list',
+        required: false,
+      },
+    ],
+    handler: async ({ summary, agent_voice, privacy_settings }) => {
+      const nextPatch: Partial<AgentPreviewDisplay> = {};
+      if (summary) nextPatch.summary = summary;
+      if (agent_voice) nextPatch.agentVoice = agent_voice;
+      if (privacy_settings?.length) nextPatch.privacySettings = privacy_settings;
+      if (Object.keys(nextPatch).length === 0) return 'No changes to apply.';
+      const next = { ...display, ...nextPatch };
+      setPatch(prev => ({ ...prev, ...nextPatch }));
       updateDisplay(next);
-    }
+      return 'Preview updated.';
+    },
+  });
+
+  function openCopilot(prompt?: string) {
+    setPendingPrompt(prompt ?? null);
+    setCopilotOpen(true);
   }
 
   if (loading) {
@@ -108,19 +154,13 @@ export function AgentPreviewCard({
 
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => {
-                setCopilotOpen(true);
-                handleCopilotPrompt('Make this sound more like me');
-              }}
+              onClick={() => openCopilot('Make this sound more like me')}
               className="py-3 rounded-xl bg-zinc-900 text-zinc-300 text-sm border border-zinc-800 hover:border-zinc-700 transition-colors"
             >
               Edit voice
             </button>
             <button
-              onClick={() => {
-                setCopilotOpen(true);
-                handleCopilotPrompt('Make my privacy stricter');
-              }}
+              onClick={() => openCopilot('Make my privacy stricter')}
               className="py-3 rounded-xl bg-zinc-900 text-zinc-300 text-sm border border-zinc-800 hover:border-zinc-700 transition-colors"
             >
               Edit privacy
@@ -128,10 +168,7 @@ export function AgentPreviewCard({
           </div>
 
           <button
-            onClick={() => {
-              setCopilotOpen(true);
-              setCopilotResponse(null);
-            }}
+            onClick={() => openCopilot('Ask my agent to improve this')}
             className="w-full py-3 rounded-xl text-zinc-500 text-sm hover:text-zinc-300 transition-colors flex items-center justify-center gap-2"
           >
             <Sparkles className="w-4 h-4" />
@@ -140,12 +177,11 @@ export function AgentPreviewCard({
         </div>
       </div>
 
-      <MockCopilotPanel
+      <TwinderCopilotPanel
         open={copilotOpen}
         onClose={() => setCopilotOpen(false)}
         surface="preview"
-        response={copilotResponse}
-        onPrompt={handleCopilotPrompt}
+        pendingPrompt={pendingPrompt}
       />
     </>
   );

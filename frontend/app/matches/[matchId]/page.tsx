@@ -4,12 +4,11 @@ import { useRouter, useParams } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { localStore } from '@/lib/local-store';
 import { Avatar } from '@/components/Avatar';
-import { MockCopilotPanel } from '@/components/MockCopilotPanel';
+import { MatchCopilot } from '@/components/MatchCopilot';
 import { AgentConversationViewer } from '@/components/AgentConversationViewer';
 import { MeetConfirmationScreen } from '@/components/MeetConfirmationScreen';
 import { MobileShell } from '@/components/MobileShell';
 import { DEMO_PERSONAS } from '@/lib/personas';
-import { composeMatchCopilot } from '@/lib/copilot';
 import type { MatchCard } from '@/types';
 import {
   ArrowLeft,
@@ -63,7 +62,7 @@ export default function MatchDetail() {
 
   const [card, setCard] = useState<MatchCard | null>(null);
   const [copilotOpen, setCopilotOpen] = useState(false);
-  const [copilotResponse, setCopilotResponse] = useState<string | null>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const [eavesdropOpen, setEavesdropOpen] = useState(false);
   const [meetOpen, setMeetOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -118,9 +117,9 @@ export default function MatchDetail() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleCopilotPrompt(prompt: string) {
-    if (!card) return;
-    setCopilotResponse(composeMatchCopilot(prompt, card));
+  function openCopilot(prompt?: string) {
+    setPendingPrompt(prompt ?? null);
+    setCopilotOpen(true);
   }
 
   if (!card) {
@@ -231,20 +230,14 @@ export default function MatchDetail() {
           <Section title="Ask your agent">
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => {
-                  setCopilotResponse(null);
-                  setCopilotOpen(true);
-                }}
+                onClick={() => openCopilot('Why should I meet this person?')}
                 className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20 hover:bg-violet-500/20 transition-colors"
               >
                 <Sparkles className="w-3 h-3" />
                 Ask my agent why
               </button>
               <button
-                onClick={() => {
-                  setCopilotResponse(composeMatchCopilot('Give me a less awkward opener', card));
-                  setCopilotOpen(true);
-                }}
+                onClick={() => openCopilot('Give me a less awkward opener')}
                 className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700 transition-colors"
               >
                 <Zap className="w-3 h-3" />
@@ -321,10 +314,7 @@ export default function MatchDetail() {
               <span className="text-xs text-zinc-500 group-hover:text-red-400">Pass</span>
             </button>
             <button
-              onClick={() => {
-                setCopilotResponse(null);
-                setCopilotOpen(true);
-              }}
+              onClick={() => openCopilot()}
               className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-zinc-800 hover:bg-violet-500/20 border border-zinc-700 hover:border-violet-500/30 transition-colors group"
               aria-label="Ask agent"
             >
@@ -352,13 +342,11 @@ export default function MatchDetail() {
           </div>
         </div>
 
-        {/* Copilot panel */}
-        <MockCopilotPanel
+        <MatchCopilot
+          card={card}
           open={copilotOpen}
           onClose={() => setCopilotOpen(false)}
-          surface="detail"
-          response={copilotResponse}
-          onPrompt={handleCopilotPrompt}
+          pendingPrompt={pendingPrompt}
         />
 
         {/* Meet confirmation */}

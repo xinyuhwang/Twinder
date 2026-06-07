@@ -5,10 +5,9 @@ import { useRouter, useParams } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { localStore } from '@/lib/local-store';
 import { Avatar } from '@/components/Avatar';
-import { MockCopilotPanel } from '@/components/MockCopilotPanel';
+import { MatchCopilot } from '@/components/MatchCopilot';
 import { MeetConfirmationScreen } from '@/components/MeetConfirmationScreen';
 import { MobileShell } from '@/components/MobileShell';
-import { composeMatchCopilot } from '@/lib/copilot';
 import type { MatchCard } from '@/types';
 import {
   ArrowLeft,
@@ -54,7 +53,7 @@ export default function MatchSummary() {
   const [card, setCard] = useState<MatchCard | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
-  const [copilotResponse, setCopilotResponse] = useState<string | null>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const [meetOpen, setMeetOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -91,9 +90,9 @@ export default function MatchSummary() {
     router.push('/matches');
   }
 
-  function handleCopilotPrompt(prompt: string) {
-    if (!card) return;
-    setCopilotResponse(composeMatchCopilot(prompt, card));
+  function openCopilot(prompt?: string) {
+    setPendingPrompt(prompt ?? null);
+    setCopilotOpen(true);
   }
 
   async function handleCopy() {
@@ -250,7 +249,7 @@ export default function MatchSummary() {
               <span className="text-xs text-zinc-500">Pass</span>
             </button>
             <button
-              onClick={() => { setCopilotResponse(null); setCopilotOpen(true); }}
+              onClick={() => openCopilot('Why should I meet this person?')}
               className="flex flex-col items-center gap-1 rounded-2xl border border-zinc-700 bg-zinc-800 py-3 transition-colors hover:border-violet-500/30 hover:bg-violet-500/20"
             >
               <Sparkles className="h-5 w-5 text-zinc-400" />
@@ -275,12 +274,11 @@ export default function MatchSummary() {
           </div>
         </div>
 
-        <MockCopilotPanel
+        <MatchCopilot
+          card={card}
           open={copilotOpen}
           onClose={() => setCopilotOpen(false)}
-          surface="detail"
-          response={copilotResponse}
-          onPrompt={handleCopilotPrompt}
+          pendingPrompt={pendingPrompt}
         />
 
         <AnimatePresence>

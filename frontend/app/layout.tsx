@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { AppChrome } from '@/components/AppChrome';
+import { CopilotProvider } from '@/components/CopilotProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -12,7 +13,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen bg-[#0a0a0f]">
         <div className="relative mx-auto min-h-screen max-w-md">
-          <AppChrome>{children}</AppChrome>
+          <CopilotProvider>
+            <AppChrome>{children}</AppChrome>
+          </CopilotProvider>
         </div>
       </body>
     </html>

@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   // @copilotkit/runtime dynamically requires @anthropic-ai/sdk at runtime.
   // The serverless bundler tree-shakes it out unless we mark it as external.
-  serverExternalPackages: ['@anthropic-ai/sdk'],
+  serverExternalPackages: ['@anthropic-ai/sdk', '@copilotkit/runtime'],
 };
 
 export default nextConfig;

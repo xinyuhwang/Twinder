@@ -1,3 +1,5 @@
+// Force bundler to include this — @copilotkit/runtime requires it dynamically
+import '@anthropic-ai/sdk';
 import {
   AnthropicAdapter,
   CopilotRuntime,

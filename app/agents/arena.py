@@ -5,8 +5,9 @@ import uuid
 
 from sqlmodel import select
 
-from app.agents.dat import openness_compatibility, openness_line
-from app.agents.prompts import MATCH_CARD_SCORING_PROMPT, MODE_GUIDELINES, TWIN_OPENER, TWIN_SYSTEM_PROMPT
+from app.agents.dat import openness_compatibility
+from app.agents.prompts import MATCH_CARD_SCORING_PROMPT, TWIN_OPENER
+from app.agents.twin_prompt import build_twin_system_prompt, persona_with_openness
 from app.database import get_session
 from app.llm import chat
 from app.models import EventParticipant, User
@@ -101,7 +102,7 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
 
     async def run_one(opponent: User) -> None:
         try:
-            card = await _arena_conversation(user, opponent, mode)
+            card = await _arena_conversation(user, opponent, mode, session)
         except Exception as e:
             card = _fallback_match_card(user, opponent, str(e))
         if not isinstance(card, dict):
@@ -130,7 +131,7 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
     return match_cards
 
 
-async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
+async def _arena_conversation(user_a: User, user_b: User, mode: str, session) -> dict:
     """Run a short conversation between two agents and score it."""
     r = get_redis()
     pair_key = f"arena-pair:{min(user_a.id, user_b.id)}:{max(user_a.id, user_b.id)}"
@@ -141,21 +142,10 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
             card = _flip_card_perspective(card, user_a, user_b)
         return card
 
-    persona_a = user_a.persona or f"{user_a.name} — no detailed profile provided yet."
-    persona_b = user_b.persona or f"{user_b.name} — no detailed profile provided yet."
-
-    # Fold the divergent-thinking / openness signal into the persona text so
-    # both the agents and the scorer can reason about it.
-    line_a = openness_line(user_a.dat_score)
-    line_b = openness_line(user_b.dat_score)
-    if line_a:
-        persona_a = f"{persona_a}\n\n{line_a}"
-    if line_b:
-        persona_b = f"{persona_b}\n\n{line_b}"
-
-    mode_guidelines = MODE_GUIDELINES.get(mode, MODE_GUIDELINES["networking"])
-    system_a = TWIN_SYSTEM_PROMPT.format(name=user_a.name, persona=persona_a, mode_guidelines=mode_guidelines)
-    system_b = TWIN_SYSTEM_PROMPT.format(name=user_b.name, persona=persona_b, mode_guidelines=mode_guidelines)
+    persona_a = persona_with_openness(user_a, session)
+    persona_b = persona_with_openness(user_b, session)
+    system_a = build_twin_system_prompt(user_a, mode, session)
+    system_b = build_twin_system_prompt(user_b, mode, session)
 
     convo_id = f"arena-convo:{uuid.uuid4()}"
 

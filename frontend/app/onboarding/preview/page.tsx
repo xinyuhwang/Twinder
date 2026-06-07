@@ -26,6 +26,18 @@ async function submitDatInBackground(token: string, datWordsCsv: string) {
   }
 }
 
+async function syncPersonaIfEmpty(token: string, personaText: string) {
+  const trimmed = personaText.trim();
+  if (!trimmed) return;
+  try {
+    const me = await api.getMe(token);
+    if (me.persona?.trim()) return;
+    await api.updateMe(token, { persona: trimmed });
+  } catch {
+    // Non-blocking — arena still works if this fails.
+  }
+}
+
 export default function OnboardingPreview() {
   const router = useRouter();
   const [preview, setPreview] = useState<AgentPreviewDisplay | null>(null);
@@ -71,6 +83,7 @@ export default function OnboardingPreview() {
             looking_for: derived.lookingFor,
             interests: derived.interests,
           });
+          await syncPersonaIfEmpty(token!, derived.summary);
           setLoading(false);
           return;
         }
@@ -109,6 +122,7 @@ export default function OnboardingPreview() {
           looking_for: fallback.lookingFor,
           interests: fallback.interests,
         });
+        await syncPersonaIfEmpty(token!, fallback.summary);
       } finally {
         setLoading(false);
       }
@@ -117,14 +131,16 @@ export default function OnboardingPreview() {
     load();
   }, [router]);
 
-  function handleApprove() {
-    if (preview) {
+  async function handleApprove() {
+    const token = localStore.getToken();
+    if (preview && token) {
       const twin: TwinPreview = {
         public_safe_summary: preview.summary,
         looking_for: preview.lookingFor,
         interests: preview.interests,
       };
       localStore.setTwinPreview(twin);
+      await syncPersonaIfEmpty(token, preview.summary);
     }
     router.push('/arena');
   }

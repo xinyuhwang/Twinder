@@ -90,7 +90,11 @@ function VibeResults({
       <div className="space-y-2">
         <div className="text-5xl">✨</div>
         <h2 className="text-3xl font-bold text-white">Vibe Score</h2>
-        <p className={`text-6xl font-bold ${color}`}>{score}<span className="text-2xl text-zinc-500">/100</span></p>
+        {room.vibe_score !== null ? (
+          <p className={`text-6xl font-bold ${color}`}>{score}<span className="text-2xl text-zinc-500">/100</span></p>
+        ) : (
+          <p className="text-xl text-zinc-500 animate-pulse">Calculating...</p>
+        )}
       </div>
 
       {room.vibe_summary && (
@@ -250,26 +254,29 @@ export default function RoomPage() {
     setCompleting(true);
     try {
       await api.completeRoom(token, roomId);
-      // Poll for vibe score
-      let attempts = 0;
-      const poll = setInterval(async () => {
-        attempts++;
-        try {
-          const r = await api.getRoom(token, roomId);
-          if (r.vibe_score !== null || attempts > 10) {
-            clearInterval(poll);
-            setRoom(r);
-            setShowResults(true);
-            setCompleting(false);
-          }
-        } catch {
-          clearInterval(poll);
-          setCompleting(false);
-        }
-      }, 1500);
     } catch {
-      setCompleting(false);
+      // Room may already be completed — fetch current state and show results anyway
     }
+    // Show results immediately; poll in background to fill in vibe score when ready
+    const current = await api.getRoom(token, roomId).catch(() => null);
+    if (current) setRoom(current);
+    setShowResults(true);
+    setCompleting(false);
+
+    // Keep polling until vibe_score arrives (max 15s)
+    let attempts = 0;
+    const poll = setInterval(async () => {
+      attempts++;
+      try {
+        const r = await api.getRoom(token, roomId);
+        if (r.vibe_score !== null || attempts > 10) {
+          clearInterval(poll);
+          setRoom(r);
+        }
+      } catch {
+        clearInterval(poll);
+      }
+    }, 1500);
   }, [token, roomId, completing]);
 
   const handleSend = useCallback(() => {
@@ -312,7 +319,7 @@ export default function RoomPage() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[#0a0a0f]/90 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-zinc-800/50">
         <button
-          onClick={() => router.push('/arena')}
+          onClick={() => router.push('/demo')}
           className="text-zinc-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

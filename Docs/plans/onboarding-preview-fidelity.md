@@ -2,14 +2,16 @@
 
 **Status:** proposed (not yet implemented)
 **Date:** 2026-06-07
-**Scope:** the three P0 fixes from the onboarding/matchmaking review — (1) preview fidelity,
-(2) minimum-answer gate, (3) missing high-signal questions. Plus two small copy fixes the
-review flagged. The ~76s intake latency (P1) and the demo mode-badge (P1) are explicitly
-**out of scope** here.
+**Scope:** the P0 fixes from the onboarding/matchmaking review — (1) preview fidelity and
+(2) minimum-answer gate. Plus a small DAT copy fix. The ~76s intake latency (P1) and the demo
+mode-badge (P1) are explicitly **out of scope** here.
 
 **Decisions locked with the user:**
 - The minimum-answer gate applies to **everyone**, including the rich-import path: `event_goals` is always required.
 - Keep the DAT; **do not** restore the color question. Add a one-line explainer and align the DAT copy.
+- **Do not add the missing questions** (`hope_to_find`, `can_help_15min`, `never_share`) — the
+  current question set is sufficient. Synthesis still has hooks for those fields; they'll only be
+  populated from imported context, which is acceptable.
 
 ---
 
@@ -34,10 +36,6 @@ Verified against current `Alexis` branch (corrections to the original review not
   [RequiredQuestionFlow.tsx](../../frontend/components/RequiredQuestionFlow.tsx), "Skip this
   question" and "Finish onboarding" are available from step 0; `handleFinishEarly` and
   `handleComplete` are functionally identical.
-- **Missing high-signal questions.** `hope_to_find`, `can_help_15min`, `never_share` (and
-  `color`) exist in synthesis `_ANSWER_LABELS`
-  ([synthesis.py:427-436](../../app/agents/synthesis.py#L427-L436)) but have no question, so they
-  go unfilled unless present in imported text.
 - **DAT copy mismatch.** Flow text says "name 10 words as different from each other as possible"
   ([RequiredQuestionFlow.tsx:19](../../frontend/components/RequiredQuestionFlow.tsx#L19)); the
   component itself only says "Enter a random word."
@@ -162,12 +160,16 @@ they provided them. That's the desired behavior.
    non-empty). When disabled, relabel to **"Answer the event question to continue"** with reduced
    opacity, so it reads as a requirement rather than a dead button.
 3. The DAT step and per-question "Skip" stay as-is (still optional) — only the finish path is gated.
-4. **Importer path:** today both `chooseQuestions()` and `proceedWithImport()` route to
+4. **Reorder so `event_goals` is reached fast.** It's currently step 2
+   ([RequiredQuestionFlow.tsx:22-25](../../frontend/components/RequiredQuestionFlow.tsx#L22-L25));
+   move it to step 1 (right after `animal`) so the one required question isn't buried behind the
+   DAT. Keeps the gate low-friction.
+5. **Importer path:** today both `chooseQuestions()` and `proceedWithImport()` route to
    `/onboarding/questions` ([onboarding/page.tsx](../../frontend/app/onboarding/page.tsx)), so the
    importer already passes through this flow — the gate covers them automatically. No separate
    importer branch needed. (Confirm `proceedWithImport` does not auto-advance past the questions
    screen; if it ever short-circuits to preview, add the same `eventGoalsAnswered` check there.)
-5. Edge case: make `handleFinishEarly` ([line 80](../../frontend/components/RequiredQuestionFlow.tsx#L80))
+6. Edge case: make `handleFinishEarly` ([line 80](../../frontend/components/RequiredQuestionFlow.tsx#L80))
    a no-op when the gate is unmet (defense in depth, in case the button's `disabled` is bypassed).
 
 **Why event_goals specifically:** it maps to `current_intent` + `profile_positioning` in synthesis
@@ -176,36 +178,7 @@ while guaranteeing the twin isn't a blank seed.
 
 ---
 
-## Fix 3 — Add the 3 missing high-signal questions
-
-**Goal:** collect the signals synthesis already expects (`_ANSWER_LABELS` keys exist; no backend
-prompt change needed).
-
-[frontend/components/RequiredQuestionFlow.tsx:12-34](../../frontend/components/RequiredQuestionFlow.tsx#L12-L34)
-— extend `REQUIRED_QUESTIONS`. Use **exact ids** matching `_ANSWER_LABELS` so they map correctly:
-
-```ts
-{ id: 'hope_to_find',  text: 'Who do you most hope to meet here — and what would make a connection click?' },
-{ id: 'can_help_15min', text: 'If someone grabbed you for 15 minutes, what could you actually help them with?' },
-{ id: 'never_share',   text: "Anything you'd rather your twin never bring up? (totally fine to leave blank)" },
-```
-
-Ordering recommendation (keeps `event_goals` early since it's the gate):
-`animal → event_goals → hope_to_find → can_help_15min → belief_changed → help_others → never_share → dat`.
-(Move `event_goals` to step 1 so the required question is reached fast; put `never_share` and `dat`
-last as low-pressure closers.)
-
-Verification: these ids already have entries in
-[`_ANSWER_LABELS`](../../app/agents/synthesis.py#L427-L436) → they flow through
-`_format_answers_block` into synthesis with correct labels. `never_share` maps to
-`privacy.sensitive_do_not_share`. **No backend change required for Fix 3.**
-
-`never_share` should be genuinely optional (explicitly "fine to leave blank") and must NOT be
-gated by Fix 2.
-
----
-
-## Fix 4 (small) — DAT copy alignment + explainer
+## Fix 3 (small) — DAT copy alignment + explainer
 
 [frontend/components/DivergentAssociationTask.tsx:~76](../../frontend/components/DivergentAssociationTask.tsx)
 — replace "Enter a random word." with copy consistent with the flow framing, plus the "why":
@@ -225,9 +198,8 @@ component heading say the same thing.
    `POST /users/me/intake` returning populated `agent_vibe`/`can_help_with`/etc.
 2. **Fix 1 frontend** (types + precedence inversion + persona-null for OAuth) — the highest-impact
    change; depends on 1.
-3. **Fix 3** (add questions) — independent; verify ids reach synthesis with right labels.
-4. **Fix 2** (gate) — depends on `event_goals` existing in the (reordered) list.
-5. **Fix 4** (copy) — independent, trivial.
+3. **Fix 2** (gate + reorder `event_goals` to step 1) — independent of Fix 1.
+4. **Fix 3** (DAT copy) — independent, trivial.
 
 **Manual verification (no automated tests in this area):**
 - Run backend + frontend, walk `/demo → onboarding → questions`, answer only `event_goals`, finish.

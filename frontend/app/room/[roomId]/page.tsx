@@ -251,6 +251,10 @@ export default function RoomPage() {
 
   const handleWrapUp = useCallback(async () => {
     if (!token || completing) return;
+    if (messages.length === 0) {
+      router.push('/demo');
+      return;
+    }
     setCompleting(true);
     try {
       await api.completeRoom(token, roomId);
@@ -277,7 +281,7 @@ export default function RoomPage() {
         clearInterval(poll);
       }
     }, 1500);
-  }, [token, roomId, completing]);
+  }, [token, roomId, completing, messages, router]);
 
   const handleSend = useCallback(() => {
     if (!inputText.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;

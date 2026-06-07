@@ -170,6 +170,13 @@ async def complete_room(
     await r.hset(f"room:{room_id}:state", "status", "completed")
     await r.srem("rooms:active", room_id)
 
+    # Clear matchmake result keys so participants can start a fresh match
+    participants_list = session.exec(
+        select(RoomParticipant).where(RoomParticipant.room_id == room_id)
+    ).all()
+    for p in participants_list:
+        await r.delete(f"matchmaking:result:{p.user_id}")
+
     # Trigger vibe scoring in background
     from app.agents.scorer import score_conversation
 

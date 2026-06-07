@@ -64,6 +64,13 @@ export default function Arena() {
         const res = await api.matchmakeStatus(token!);
         failureCount.current = 0;
         if (res.status === 'matched' && res.room_id) {
+          // Guard: skip rooms that are already completed (stale Redis result)
+          const room = await api.getRoom(token!, res.room_id).catch(() => null);
+          if (room && room.status === 'completed') {
+            // Stale result — re-enqueue
+            await api.matchmake(token!).catch(() => {});
+            return;
+          }
           localStore.setCurrentRoomId(res.room_id);
           clearIntervals();
           router.push(`/room/${res.room_id}`);

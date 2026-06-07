@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   // Run `tsc --noEmit` / `eslint` separately (e.g. on a dev machine or CI) for safety.
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
+  // @copilotkit/runtime dynamically requires @anthropic-ai/sdk at runtime.
+  // The serverless bundler tree-shakes it out unless we mark it as external.
+  serverExternalPackages: ['@anthropic-ai/sdk'],
 };
 
 export default nextConfig;

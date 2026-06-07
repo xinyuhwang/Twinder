@@ -1,6 +1,4 @@
-import json
-import re
-
+from app.agents.json_parse import parse_llm_json
 from app.agents.prompts import MATCH_CARD_SCORING_PROMPT
 from app.llm import chat
 from app.observability import op
@@ -28,9 +26,9 @@ async def format_match_card(
     try:
         raw = await chat(
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=800,
+            max_tokens=1500,
         )
-        return _parse_json(raw)
+        return parse_llm_json(raw)
     except Exception as e:
         return {
             "score": vibe.get("score", 50),
@@ -40,17 +38,3 @@ async def format_match_card(
             "error": str(e),
         }
 
-
-def _parse_json(text: str) -> dict:
-    text = text.strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-    match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
-    if match:
-        return json.loads(match.group(1).strip())
-    start, end = text.find("{"), text.rfind("}") + 1
-    if start >= 0 and end > start:
-        return json.loads(text[start:end])
-    raise ValueError(f"Could not parse JSON: {text[:200]}")

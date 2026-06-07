@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { DEMO_PERSONAS } from '@/lib/personas';
 import { buildPreviewFromTwinPreview, type AgentPreviewDisplay } from '@/lib/preview';
 import type { UserRead } from '@/types';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import {
   Check,
   Eye,
@@ -121,7 +122,7 @@ export default function Profile() {
     return (
       <MobileShell>
         <div className="flex min-h-screen items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
       </MobileShell>
     );
@@ -133,15 +134,15 @@ export default function Profile() {
         <div className="flex items-center gap-4">
           <Avatar name={user?.name ?? 'You'} size="lg" />
           <div className="min-w-0 flex-1 space-y-0.5">
-            <h1 className="truncate text-2xl font-bold text-white">{user?.name ?? 'Your profile'}</h1>
-            <p className="truncate text-sm text-zinc-500">
+            <h1 className="truncate text-2xl font-bold text-primary">{user?.name ?? 'Your profile'}</h1>
+            <p className="truncate text-sm text-subtle">
               {user?.age != null ? `${user.age} - ` : ''}
               {user?.email ?? ''}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-1 rounded-2xl border border-zinc-800 bg-zinc-900 p-1">
+        <div className="grid grid-cols-2 gap-1 rounded-2xl border border-border bg-surface p-1">
           <TabButton active={tab === 'public'} onClick={() => setTab('public')} icon={Eye}>
             Public profile
           </TabButton>
@@ -151,7 +152,7 @@ export default function Profile() {
         </div>
 
         {error && (
-          <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <div className="rounded-xl border border-error/20 bg-error/10 px-4 py-3 text-sm text-error-fg">
             {error}
           </div>
         )}
@@ -167,7 +168,7 @@ export default function Profile() {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Your name"
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white placeholder-zinc-600 outline-none transition-colors focus:border-violet-500"
+                className="field-input"
               />
             </Field>
 
@@ -177,7 +178,7 @@ export default function Profile() {
                 onChange={e => setAge(e.target.value.replace(/[^0-9]/g, ''))}
                 inputMode="numeric"
                 placeholder="e.g. 27"
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white placeholder-zinc-600 outline-none transition-colors focus:border-violet-500"
+                className="field-input"
               />
             </Field>
 
@@ -190,14 +191,14 @@ export default function Profile() {
                 onChange={e => setBio(e.target.value)}
                 rows={6}
                 placeholder="What you build, what you care about, who you want to meet..."
-                className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm leading-relaxed text-white placeholder-zinc-600 outline-none transition-colors focus:border-violet-500"
+                className="field-textarea"
               />
             </Field>
 
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 py-4 text-lg font-semibold text-white transition-colors hover:bg-violet-500 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent-solid py-4 text-lg font-semibold text-accent-fg transition-colors hover:bg-accent-solid-hover disabled:opacity-60"
             >
               {saving ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -216,18 +217,20 @@ export default function Profile() {
                 localStore.setRawContext(bio.trim());
                 router.push('/onboarding');
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 py-3 text-sm font-medium text-zinc-300 transition-colors hover:border-zinc-700"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-3 text-sm font-medium text-secondary transition-colors hover:border-border-strong"
             >
-              <Sparkles className="h-4 w-4 text-violet-400" />
+              <Sparkles className="h-4 w-4 text-accent" />
               Rebuild my twin from intake
             </button>
           </div>
         )}
 
+        <ThemeToggle />
+
         <div className="mt-auto pt-4">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 py-3 text-sm text-zinc-500 transition-colors hover:text-red-400"
+            className="flex w-full items-center justify-center gap-2 py-3 text-sm text-subtle transition-colors hover:text-error-fg"
           >
             <LogOut className="h-4 w-4" />
             Log out
@@ -253,7 +256,7 @@ function TabButton({
     <button
       onClick={onClick}
       className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-medium transition-colors ${
-        active ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
+        active ? 'bg-accent-solid text-accent-fg' : 'text-muted hover:text-secondary'
       }`}
     >
       <Icon className="h-4 w-4" />
@@ -273,9 +276,9 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium text-zinc-300">{label}</label>
+      <label className="text-sm font-medium text-secondary">{label}</label>
       {children}
-      {hint && <p className="text-xs text-zinc-600 leading-relaxed">{hint}</p>}
+      {hint && <p className="text-xs text-subtle leading-relaxed">{hint}</p>}
     </div>
   );
 }
@@ -283,11 +286,11 @@ function Field({
 function PublicProfile({ preview }: { preview: AgentPreviewDisplay }) {
   return (
     <div className="space-y-4">
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-subtle">
         This is how your twin represents you to other agents in the arena.
       </p>
 
-      <div className="card-glow space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+      <div className="card-glow space-y-4 rounded-2xl border border-border bg-surface p-5">
         <div className="flex items-center gap-4">
           <Avatar
             name={preview.avatarName}
@@ -296,12 +299,12 @@ function PublicProfile({ preview }: { preview: AgentPreviewDisplay }) {
             size="md"
           />
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-white">{preview.agentName}</h2>
-            <p className="text-sm text-violet-300">{preview.agentVibe}</p>
+            <h2 className="text-lg font-bold text-primary">{preview.agentName}</h2>
+            <p className="text-sm text-accent-muted">{preview.agentVibe}</p>
           </div>
         </div>
         {preview.summary && (
-          <p className="text-sm leading-relaxed text-zinc-300">{preview.summary}</p>
+          <p className="text-sm leading-relaxed text-secondary">{preview.summary}</p>
         )}
       </div>
 
@@ -309,15 +312,15 @@ function PublicProfile({ preview }: { preview: AgentPreviewDisplay }) {
       <PreviewSection title="Interests" items={preview.interests} />
       <PreviewSection title="Can help with" items={preview.canHelpWith} />
 
-      <div className="space-y-2 rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
+      <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
+        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted">
           <Shield className="h-3.5 w-3.5" />
           Privacy
         </div>
         <ul className="space-y-1.5">
           {preview.privacySettings.map(item => (
-            <li key={item} className="flex items-start gap-2 text-xs text-zinc-400">
-              <span className="mt-0.5 flex-shrink-0 text-emerald-500">-</span>
+            <li key={item} className="flex items-start gap-2 text-xs text-muted">
+              <span className="mt-0.5 flex-shrink-0 text-success">-</span>
               {item}
             </li>
           ))}
@@ -330,13 +333,13 @@ function PublicProfile({ preview }: { preview: AgentPreviewDisplay }) {
 function PreviewSection({ title, items }: { title: string; items: string[] }) {
   if (!items || items.length === 0) return null;
   return (
-    <div className="space-y-2 rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">{title}</p>
+    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted">{title}</p>
       <div className="flex flex-wrap gap-2">
         {items.map(item => (
           <span
             key={item}
-            className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs text-violet-300"
+            className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs text-accent-muted"
           >
             {item}
           </span>

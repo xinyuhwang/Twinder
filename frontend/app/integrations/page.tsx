@@ -9,7 +9,7 @@ const INTEGRATIONS = [
     id: 'chatgpt',
     name: 'ChatGPT',
     icon: Bot,
-    color: 'bg-emerald-500',
+    color: 'bg-success',
     description:
       'Import your ChatGPT memory, project notes, and self-descriptions so your twin sounds like you already do.',
   },
@@ -54,13 +54,13 @@ export default function Integrations() {
         <div className="space-y-1">
           <Link
             href="/onboarding"
-            className="inline-flex items-center gap-1.5 text-zinc-500 text-sm hover:text-zinc-300 transition-colors mb-2"
+            className="inline-flex items-center gap-1.5 text-subtle text-sm hover:text-secondary transition-colors mb-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to intake
           </Link>
-          <h1 className="text-2xl font-bold text-white">Connect your context</h1>
-          <p className="text-zinc-500 text-sm">
+          <h1 className="text-2xl font-bold text-primary">Connect your context</h1>
+          <p className="text-subtle text-sm">
             Future import options for building your twin faster. All integrations are visual-only in this demo.
           </p>
         </div>
@@ -71,25 +71,25 @@ export default function Integrations() {
             return (
               <div
                 key={id}
-                className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3"
+                className="p-4 rounded-2xl bg-surface border border-border space-y-3"
               >
                 <div className="flex items-start gap-3">
                   <div
                     className={`w-11 h-11 ${color} rounded-xl flex items-center justify-center flex-shrink-0`}
                   >
-                    <Icon className="w-5 h-5 text-white" />
+                    <Icon className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-white">{name}</span>
+                      <span className="font-semibold text-primary">{name}</span>
                       {isConnected && (
-                        <span className="inline-flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        <span className="inline-flex items-center gap-1 text-xs text-success-fg bg-success/10 px-2 py-0.5 rounded-full border border-success/20">
                           <CheckCircle2 className="w-3 h-3" />
                           Connected
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-zinc-500 leading-relaxed">{description}</p>
+                    <p className="text-xs text-subtle leading-relaxed">{description}</p>
                   </div>
                 </div>
 
@@ -97,8 +97,8 @@ export default function Integrations() {
                   onClick={() => toggleConnection(id)}
                   className={`w-full py-2.5 rounded-xl text-sm font-medium transition-colors ${
                     isConnected
-                      ? 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700'
-                      : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/50 hover:border-zinc-600'
+                      ? 'bg-surface-2 text-muted border border-border-strong hover:bg-border-strong'
+                      : 'bg-surface-2/50 text-muted border border-border-strong/50 hover:border-border-strong'
                   }`}
                 >
                   {isConnected ? 'Disconnect' : 'Connect — Coming soon'}
@@ -108,7 +108,7 @@ export default function Integrations() {
           })}
         </div>
 
-        <p className="text-center text-xs text-zinc-600 leading-relaxed">
+        <p className="text-center text-xs text-subtle leading-relaxed">
           Nothing is imported in this demo. Use paste context on the intake screen instead.
         </p>
       </div>

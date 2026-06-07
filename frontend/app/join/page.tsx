@@ -91,40 +91,40 @@ export default function JoinEvent() {
     <MobileShell>
       <div className="flex flex-col min-h-screen px-6 py-10 gap-6">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-violet-400 text-sm">
+          <div className="flex items-center gap-2 text-accent text-sm">
             <Zap className="w-4 h-4" />
             <span>Join an event</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Where are your agents meeting?</h1>
-          <p className="text-zinc-500 text-sm">
+          <h1 className="text-2xl font-bold text-primary">Where are your agents meeting?</h1>
+          <p className="text-subtle text-sm">
             Enter a code and pick a mode. Your twin uses this to shape matches and conversation tone.
           </p>
           {localStore.getUserName() && (
-            <p className="text-xs text-zinc-600 pt-1">
+            <p className="text-xs text-subtle pt-1">
               Signed in as {localStore.getUserName()}
             </p>
           )}
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="event-code" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">
+          <label htmlFor="event-code" className="text-xs font-medium text-muted uppercase tracking-wide">
             Event code
           </label>
           <div className="relative">
-            <Code2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <Code2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle" />
             <input
               id="event-code"
               type="text"
               value={eventCode}
               onChange={e => setEventCode(e.target.value)}
               placeholder="e.g. HACK-AI-2026"
-              className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition-colors"
+              className="field-input field-input-icon"
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Mode</p>
+          <p className="text-xs font-medium text-muted uppercase tracking-wide">Mode</p>
           <div className="grid grid-cols-2 gap-2">
             {MODES.map(({ id, label, icon: Icon }) => (
               <button
@@ -132,18 +132,18 @@ export default function JoinEvent() {
                 onClick={() => setMode(id)}
                 className={`flex items-center gap-2.5 p-3.5 rounded-2xl border transition-all text-left ${
                   mode === id
-                    ? 'border-violet-500 bg-violet-500/10'
-                    : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
+                    ? 'border-accent bg-accent/10'
+                    : 'border-border bg-surface hover:border-border-strong'
                 }`}
               >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    mode === id ? 'bg-violet-500/20' : 'bg-zinc-800'
+                    mode === id ? 'bg-accent/20' : 'bg-surface-2'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${mode === id ? 'text-violet-400' : 'text-zinc-500'}`} />
+                  <Icon className={`w-4 h-4 ${mode === id ? 'text-accent' : 'text-subtle'}`} />
                 </div>
-                <span className={`text-sm font-medium ${mode === id ? 'text-white' : 'text-zinc-400'}`}>
+                <span className={`text-sm font-medium ${mode === id ? 'text-primary' : 'text-muted'}`}>
                   {label}
                 </span>
               </button>
@@ -151,9 +151,9 @@ export default function JoinEvent() {
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 space-y-1">
-          <p className="text-sm font-semibold text-white">{selectedMode.headline}</p>
-          <p className="text-xs text-zinc-500 leading-relaxed">{selectedMode.description}</p>
+        <div className="p-4 rounded-2xl bg-surface/80 border border-border space-y-1">
+          <p className="text-sm font-semibold text-primary">{selectedMode.headline}</p>
+          <p className="text-xs text-subtle leading-relaxed">{selectedMode.description}</p>
         </div>
 
         <div className="flex-1" />
@@ -161,7 +161,7 @@ export default function JoinEvent() {
         <div className="space-y-3">
           <button
             onClick={handleContinue}
-            className="w-full py-4 rounded-2xl bg-violet-600 text-white font-semibold text-lg hover:bg-violet-500 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-2xl bg-accent-solid text-accent-fg font-semibold text-lg hover:bg-accent-solid-hover transition-colors flex items-center justify-center gap-2"
           >
             Continue
             <ArrowRight className="w-5 h-5" />
@@ -169,18 +169,18 @@ export default function JoinEvent() {
 
           <button
             onClick={handleDemoShortcut}
-            className="w-full py-3.5 rounded-2xl bg-zinc-900 text-zinc-300 text-sm font-medium hover:bg-zinc-800 border border-zinc-800 transition-colors"
+            className="w-full py-3.5 rounded-2xl bg-surface text-secondary text-sm font-medium hover:bg-surface-2 border border-border transition-colors"
           >
             Use demo shortcut
           </button>
 
-          <p className="text-center text-xs text-zinc-600">
+          <p className="text-center text-xs text-subtle">
             Demo shortcut loads HACK-AI-2026 with pre-built twins.
           </p>
 
           <Link
             href="/"
-            className="block text-center text-xs text-zinc-600 hover:text-zinc-400 transition-colors pt-1"
+            className="block text-center text-xs text-subtle hover:text-muted transition-colors pt-1"
           >
             Back to home
           </Link>

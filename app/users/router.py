@@ -11,10 +11,11 @@ from app.agents.profile import (
     new_profile_version,
 )
 from app.agents.synthesis import build_system_instruction, synthesize_profile
+from app.agents.twin_prompt import build_twin_system_prompt
 from app.database import get_session
 from app.deps import get_current_user
 from app.models import User
-from app.schemas import DatRequest, DatResult, IntakeRequest, TwinPreview, UserRead, UserUpdate
+from app.schemas import DatRequest, DatResult, IntakeRequest, TwinPreview, TwinPromptResponse, UserRead, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -56,13 +57,30 @@ async def run_intake(
         session,
         user.id,
         profile_yaml=yaml_str,
-        matching_vector=json.dumps(synthesis.get("matching_vector") or {}),
+        matching_vector=json.dumps(synthesis),
         system_instruction=system_instruction,
     )
     user.persona = _derive_persona(yaml_str)
     session.add(user)
     session.commit()
-    return TwinPreview(**_to_twin_preview(yaml_str))
+    session.refresh(user)
+
+    twin_prompt = build_twin_system_prompt(user, body.mode, session)
+    preview = _to_twin_preview(yaml_str)
+    return TwinPreview(**preview, twin_prompt=twin_prompt)
+
+
+@router.get("/me/twin-prompt", response_model=TwinPromptResponse)
+async def get_twin_prompt(
+    mode: str = "networking",
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Return the system prompt the twin will use in arena/chat for the current user."""
+    return TwinPromptResponse(
+        mode=mode,
+        twin_prompt=build_twin_system_prompt(user, mode, session),
+    )
 
 
 @router.post("/me/dat", response_model=DatResult)

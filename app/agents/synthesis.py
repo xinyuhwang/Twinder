@@ -3,6 +3,7 @@ from typing import Optional
 
 import yaml
 
+from app.config import settings
 from app.llm import chat
 from app.observability import op
 
@@ -321,8 +322,8 @@ async def synthesize_profile(
     raw = await chat(
         messages=[{"role": "user", "content": user_content}],
         system=SYNTHESIS_PROMPT,
-        model="anthropic/claude-haiku-4-5-20251001",
-        max_tokens=2000,
+        model=settings.llm_synthesis_model,
+        max_tokens=4096,
     )
     return _parse_synthesis(raw)
 
@@ -370,9 +371,45 @@ def build_system_instruction(synthesis: dict, name: str) -> str:
     if spark:
         parts.append(f"\nTopics likely to create spark:\n{spark}")
 
-    parts.append("\nKeep responses short and conversational — 3 sentences or fewer, like texting. Never claim credentials the user doesn't have. Never reveal sensitive or internal-only profile information.")
+    parts.append(
+        "\nKeep responses SHORT. 1-2 sentences max, like iMessage. "
+        "Never claim credentials the user doesn't have. "
+        "Never reveal sensitive or internal-only profile information."
+    )
 
     return "\n".join(parts)
+
+
+def is_stub_instruction(text: str | None) -> bool:
+    """True when the stored instruction is the generic fallback, not a real synthesis."""
+    if not text or not text.strip():
+        return True
+    if "Represent the user authentically and help find good matches." in text:
+        return True
+    if text.count("Be authentic and helpful.") >= 1 and len(text) < 800:
+        return True
+    return False
+
+
+def load_synthesis_from_profile_version(matching_vector_json: str | None) -> dict:
+    """Parse stored synthesis JSON from ProfileVersion.matching_vector."""
+    if not matching_vector_json:
+        return {"profile": {}, "matching_vector": {}}
+    try:
+        import json
+
+        data = json.loads(matching_vector_json)
+    except (json.JSONDecodeError, TypeError):
+        return {"profile": {}, "matching_vector": {}}
+    if not isinstance(data, dict):
+        return {"profile": {}, "matching_vector": {}}
+    if "profile" in data or "matching_vector" in data:
+        return {
+            "profile": data.get("profile") or {},
+            "matching_vector": data.get("matching_vector") or {},
+        }
+    # Legacy rows stored only the matching vector document.
+    return {"profile": {}, "matching_vector": data}
 
 
 def _parse_synthesis(text: str) -> dict:

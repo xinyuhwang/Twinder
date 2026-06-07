@@ -86,13 +86,13 @@ export function RequiredQuestionFlow({
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-zinc-500">
+        <div className="flex items-center justify-between text-xs text-subtle">
           <span>Question {step + 1} of {totalSteps}</span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
+        <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-violet-600 to-pink-500 transition-all duration-300"
+            className="h-full rounded-full bg-gradient-to-r from-accent-solid to-aura-blush transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -108,13 +108,13 @@ export function RequiredQuestionFlow({
       ) : (
         <>
           <div className="flex-1 space-y-4">
-            <h2 className="text-xl font-semibold leading-snug text-white">{current.text}</h2>
+            <h2 className="text-xl font-semibold leading-snug text-primary">{current.text}</h2>
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
               placeholder="Type your answer..."
               rows={5}
-              className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3.5 text-white placeholder:text-zinc-600 focus:border-violet-500/50 focus:outline-none"
+              className="field-textarea"
             />
           </div>
 
@@ -122,14 +122,14 @@ export function RequiredQuestionFlow({
             <button
               onClick={handleContinue}
               disabled={!input.trim()}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 py-4 font-semibold text-white transition-colors hover:bg-violet-500 disabled:opacity-40"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent-solid py-4 font-semibold text-accent-fg transition-colors hover:bg-accent-solid-hover disabled:opacity-40"
             >
               {isLast ? 'See twin preview' : 'Continue'}
               <ArrowRight className="h-5 w-5" />
             </button>
             <button
               onClick={handleSkip}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm text-subtle transition-colors hover:text-secondary"
             >
               <SkipForward className="h-4 w-4" />
               Skip this question
@@ -140,7 +140,7 @@ export function RequiredQuestionFlow({
 
       <button
         onClick={handleFinishEarly}
-        className="mt-auto w-full rounded-2xl border border-zinc-800 bg-zinc-900 py-3.5 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+        className="mt-auto w-full rounded-2xl border border-border bg-surface py-3.5 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-secondary"
       >
         Finish onboarding
       </button>

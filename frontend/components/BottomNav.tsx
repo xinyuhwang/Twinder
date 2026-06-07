@@ -25,7 +25,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-30 mx-auto max-w-md border-t border-zinc-800/50 bg-[#0a0a0f]/95 backdrop-blur"
+      className="fixed bottom-0 left-1/2 z-30 w-full max-w-md -translate-x-1/2 border-t border-border/50 bg-nav-bg backdrop-blur"
       aria-label="Main navigation"
     >
       <div className="grid grid-cols-4">
@@ -38,10 +38,10 @@ export function BottomNav() {
               key={href}
               href={href}
               className={`flex flex-col items-center gap-1 py-3 text-xs transition-colors ${
-                active ? 'text-violet-400' : 'text-zinc-500 hover:text-zinc-300'
+                active ? 'text-accent' : 'text-subtle hover:text-secondary'
               }`}
             >
-              <Icon className={`w-5 h-5 ${active ? 'text-violet-400' : ''}`} />
+              <Icon className={`w-5 h-5 ${active ? 'text-accent' : ''}`} />
               {label}
             </Link>
           );

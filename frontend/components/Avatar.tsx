@@ -1,10 +1,10 @@
 const AVATAR_COLORS = [
   'bg-red-500',
-  'bg-emerald-500',
+  'bg-success',
   'bg-blue-500',
   'bg-pink-500',
   'bg-amber-500',
-  'bg-violet-500',
+  'bg-accent',
   'bg-orange-500',
   'bg-cyan-500',
   'bg-rose-500',
@@ -57,17 +57,17 @@ export function Avatar({
   className = '',
 }: AvatarProps) {
   const displayInitials = initials ?? (name ? deriveInitials(name) : '??');
-  const displayColor = color ?? (name ? deriveColor(name) : 'bg-zinc-600');
+  const displayColor = color ?? (name ? deriveColor(name) : 'bg-subtle');
 
   return (
     <div className={`relative flex-shrink-0 ${className}`}>
       <div
-        className={`${SIZE_CLASSES[size]} ${displayColor} rounded-full flex items-center justify-center font-bold text-white`}
+        className={`${SIZE_CLASSES[size]} ${displayColor} rounded-full flex items-center justify-center font-bold text-primary`}
       >
         {displayInitials}
       </div>
       {pulse && (
-        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-violet-400 rounded-full border-2 border-[#0a0a0f] animate-pulse" />
+        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full border-2 border-bg animate-pulse" />
       )}
     </div>
   );

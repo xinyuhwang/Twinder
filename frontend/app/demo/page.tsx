@@ -47,15 +47,15 @@ export default function Demo() {
     <MobileShell>
       <div className="flex flex-col min-h-screen px-6 py-10 gap-6">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-medium">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent-muted text-xs font-medium">
             HACK-AI-2026
           </div>
-          <div className="flex items-center gap-2 text-emerald-400 text-sm pt-2">
+          <div className="flex items-center gap-2 text-success-fg text-sm pt-2">
             <CheckCircle className="w-4 h-4" />
             <span>7 pre-built twins ready</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Who are you today?</h1>
-          <p className="text-zinc-500 text-sm">Select a pre-built twin to enter the arena.</p>
+          <h1 className="text-2xl font-bold text-primary">Who are you today?</h1>
+          <p className="text-subtle text-sm">Select a pre-built twin to enter the arena.</p>
         </div>
 
         <div className="space-y-2 flex-1">
@@ -65,8 +65,8 @@ export default function Demo() {
               onClick={() => setSelectedId(persona.id)}
               className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left ${
                 selectedId === persona.id
-                  ? 'border-violet-500 bg-violet-500/10'
-                  : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
+                  ? 'border-accent bg-accent/10'
+                  : 'border-border bg-surface hover:border-border-strong'
               }`}
             >
               <Avatar
@@ -77,21 +77,21 @@ export default function Demo() {
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-white">{persona.name}</span>
+                  <span className="font-semibold text-primary">{persona.name}</span>
                   {selectedId === persona.id && (
-                    <span className="text-xs text-violet-400 bg-violet-500/20 px-2 py-0.5 rounded-full">
+                    <span className="text-xs text-accent bg-accent/20 px-2 py-0.5 rounded-full">
                       You
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-zinc-500 truncate">{persona.role}</p>
+                <p className="text-xs text-subtle truncate">{persona.role}</p>
               </div>
             </button>
           ))}
         </div>
 
         {error && (
-          <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <div className="px-4 py-3 rounded-xl bg-error/10 border border-error/20 text-error-fg text-sm">
             {error}
           </div>
         )}
@@ -100,7 +100,7 @@ export default function Demo() {
           <button
             onClick={handleContinue}
             disabled={joining}
-            className="w-full py-4 rounded-2xl bg-violet-600 text-white font-semibold text-lg hover:bg-violet-500 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-2xl bg-accent-solid text-accent-fg font-semibold text-lg hover:bg-accent-solid-hover disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
           >
             {joining ? 'Signing in...' : `Continue as ${selectedPersona.name}`}
             {!joining && <ArrowRight className="w-5 h-5" />}
@@ -112,7 +112,7 @@ export default function Demo() {
               setSelectedId('alexis');
               setError(null);
             }}
-            className="w-full flex items-center justify-center gap-2 py-2 text-zinc-600 text-xs hover:text-zinc-400 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 text-subtle text-xs hover:text-muted transition-colors"
           >
             <RefreshCw className="w-3 h-3" />
             Reset demo

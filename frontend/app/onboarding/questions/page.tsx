@@ -21,7 +21,7 @@ export default function OnboardingQuestions() {
     return (
       <MobileShell>
         <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
         </div>
       </MobileShell>
     );
@@ -41,8 +41,8 @@ export default function OnboardingQuestions() {
     <MobileShell>
       <div className="flex min-h-screen flex-col gap-4 px-6 py-10">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-white">A few quick questions</h1>
-          <p className="text-sm text-zinc-500">
+          <h1 className="text-2xl font-bold text-primary">A few quick questions</h1>
+          <p className="text-sm text-subtle">
             Playful, fast, and revealing. Your agent uses these to sound like you.
           </p>
         </div>

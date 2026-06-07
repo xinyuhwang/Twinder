@@ -81,6 +81,7 @@ class ArenaStatusResponse(BaseModel):
 class IntakeRequest(BaseModel):
     raw_context: str
     answers: dict | None = None
+    mode: str = "networking"
 
 
 class DatRequest(BaseModel):
@@ -99,6 +100,12 @@ class TwinPreview(BaseModel):
     public_safe_summary: Optional[str] = None
     looking_for: list[str] = []
     interests: list[str] = []
+    twin_prompt: Optional[str] = None
+
+
+class TwinPromptResponse(BaseModel):
+    mode: str
+    twin_prompt: str
 
 
 class FeedbackIn(BaseModel):

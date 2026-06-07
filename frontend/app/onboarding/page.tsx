@@ -68,7 +68,7 @@ export default function OnboardingIntake() {
     return (
       <MobileShell>
         <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
         </div>
       </MobileShell>
     );
@@ -125,8 +125,8 @@ export default function OnboardingIntake() {
       <MobileShell>
         <div className="flex min-h-screen flex-col gap-6 px-6 py-10">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-white">Build your twin</h1>
-            <p className="text-sm text-zinc-500">
+            <h1 className="text-2xl font-bold text-primary">Build your twin</h1>
+            <p className="text-sm text-subtle">
               Choose how you want to give your agent context. Both paths end with a quick preview before the arena.
             </p>
           </div>
@@ -134,19 +134,19 @@ export default function OnboardingIntake() {
           <div className="flex flex-1 flex-col gap-3">
             <button
               onClick={() => setPath('import')}
-              className="flex w-full items-start gap-4 rounded-2xl border border-violet-500/40 bg-violet-500/10 p-5 text-left transition-colors hover:border-violet-500/60"
+              className="flex w-full items-start gap-4 rounded-2xl border border-accent/40 bg-accent/10 p-5 text-left transition-colors hover:border-accent/60"
             >
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-violet-500/20">
-                <FileUp className="h-5 w-5 text-violet-300" />
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-accent/20">
+                <FileUp className="h-5 w-5 text-accent-muted" />
               </div>
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-white">Import data</span>
-                  <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-xs text-violet-300">
+                  <span className="font-semibold text-primary">Import data</span>
+                  <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs text-accent-muted">
                     Recommended
                   </span>
                 </div>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-muted">
                   Drop your resume, YAML, or files. Paste links to your site, LinkedIn, or GitHub.
                 </p>
               </div>
@@ -154,14 +154,14 @@ export default function OnboardingIntake() {
 
             <button
               onClick={chooseQuestions}
-              className="flex w-full items-start gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-5 text-left transition-colors hover:border-zinc-700"
+              className="flex w-full items-start gap-4 rounded-2xl border border-border bg-surface p-5 text-left transition-colors hover:border-border-strong"
             >
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-800">
-                <MessageSquare className="h-5 w-5 text-zinc-400" />
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-surface-2">
+                <MessageSquare className="h-5 w-5 text-muted" />
               </div>
               <div className="space-y-1">
-                <span className="font-semibold text-white">Answer questions</span>
-                <p className="text-sm text-zinc-400">
+                <span className="font-semibold text-primary">Answer questions</span>
+                <p className="text-sm text-muted">
                   A few quick prompts in the app instead of importing files.
                 </p>
               </div>
@@ -177,37 +177,37 @@ export default function OnboardingIntake() {
       <div className="flex min-h-screen flex-col gap-6 px-6 py-10">
         <button
           onClick={() => setPath('choose')}
-          className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+          className="inline-flex items-center gap-1.5 text-sm text-subtle transition-colors hover:text-secondary"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to options
         </button>
 
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-white">Import your data</h1>
-          <p className="text-sm text-zinc-500">
+          <h1 className="text-2xl font-bold text-primary">Import your data</h1>
+          <p className="text-sm text-subtle">
             Drop a resume, YAML, or any file. Paste links to your site, LinkedIn, or GitHub. No scraping — we pass URLs as context.
           </p>
         </div>
 
         {/* Prompt accordion */}
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
           <button
             onClick={() => setPromptExpanded(v => !v)}
             className="flex w-full items-center justify-between px-4 py-3.5 text-left"
           >
-            <span className="text-sm font-semibold text-white">Use the Twinder prompt</span>
+            <span className="text-sm font-semibold text-primary">Use the Twinder prompt</span>
             {promptExpanded
-              ? <ChevronUp className="h-4 w-4 flex-shrink-0 text-zinc-500" />
-              : <ChevronDown className="h-4 w-4 flex-shrink-0 text-zinc-500" />}
+              ? <ChevronUp className="h-4 w-4 flex-shrink-0 text-subtle" />
+              : <ChevronDown className="h-4 w-4 flex-shrink-0 text-subtle" />}
           </button>
 
           {promptExpanded && (
-            <div className="space-y-4 border-t border-zinc-800 px-4 pb-4">
+            <div className="space-y-4 border-t border-border px-4 pb-4">
               <ol className="space-y-2 pt-3">
                 {STEPS.map((step, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-zinc-400">
-                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs text-zinc-500">
+                  <li key={i} className="flex items-start gap-3 text-sm text-muted">
+                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs text-subtle">
                       {i + 1}
                     </span>
                     {step}
@@ -217,7 +217,7 @@ export default function OnboardingIntake() {
               <a
                 href="/twinder-intake-prompt.md"
                 download="twinder-intake-prompt.md"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-solid py-3 text-sm font-semibold text-accent-fg transition-colors hover:bg-accent-solid-hover"
               >
                 <Download className="h-4 w-4" />
                 Download prompt
@@ -234,10 +234,10 @@ export default function OnboardingIntake() {
           onClick={() => fileRef.current?.click()}
           className={`relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-8 transition-all ${
             dragOver
-              ? 'border-violet-500 bg-violet-500/10'
+              ? 'border-accent bg-accent/10'
               : uploadedFileName
-                ? 'border-emerald-500/50 bg-emerald-500/5'
-                : 'border-zinc-700 bg-zinc-950/50 hover:border-zinc-600'
+                ? 'border-success/50 bg-success/5'
+                : 'border-border-strong bg-bg/50 hover:border-border-strong'
           }`}
         >
           <input
@@ -249,41 +249,41 @@ export default function OnboardingIntake() {
           />
           {uploadedFileName ? (
             <>
-              <CheckCircle className="h-7 w-7 text-emerald-400" />
-              <p className="text-sm font-medium text-emerald-300">{uploadedFileName}</p>
-              <p className="text-xs text-zinc-500">Tap to replace</p>
+              <CheckCircle className="h-7 w-7 text-success-fg" />
+              <p className="text-sm font-medium text-success-fg">{uploadedFileName}</p>
+              <p className="text-xs text-subtle">Tap to replace</p>
             </>
           ) : (
             <>
-              <Upload className="h-7 w-7 text-zinc-500" />
-              <p className="text-sm text-zinc-400">Drop resume, YAML, or any file</p>
-              <p className="text-xs text-zinc-600">.yaml .yml .md .txt .pdf .docx</p>
+              <Upload className="h-7 w-7 text-subtle" />
+              <p className="text-sm text-muted">Drop resume, YAML, or any file</p>
+              <p className="text-xs text-subtle">.yaml .yml .md .txt .pdf .docx</p>
             </>
           )}
         </div>
 
         {/* Links */}
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
-          <div className="border-b border-zinc-800 px-4 py-3.5">
-            <span className="text-sm font-semibold text-white">Profile links</span>
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <div className="border-b border-border px-4 py-3.5">
+            <span className="text-sm font-semibold text-primary">Profile links</span>
           </div>
-          <div className="p-3">
+          <div className="px-4 py-4">
             <textarea
               value={links}
               onChange={e => setLinks(e.target.value)}
               placeholder={'https://yoursite.com\nhttps://linkedin.com/in/you\nhttps://github.com/you'}
               rows={3}
-              className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3.5 text-sm text-white placeholder:text-zinc-600 focus:border-violet-500/50 focus:outline-none"
+              className="field-textarea-inset min-h-[5.5rem]"
             />
           </div>
         </div>
 
         {/* Freeform paste */}
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
-          <div className="border-b border-zinc-800 px-4 py-3.5">
-            <span className="text-sm font-semibold text-white">Or paste context</span>
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <div className="border-b border-border px-4 py-3.5">
+            <span className="text-sm font-semibold text-primary">Or paste context</span>
           </div>
-          <div className="p-3">
+          <div className="px-4 py-4">
             <textarea
               value={paste}
               onChange={e => {
@@ -294,21 +294,21 @@ export default function OnboardingIntake() {
               }}
               placeholder="Resume text, YAML from the prompt, bio, or freeform notes..."
               rows={5}
-              className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3.5 text-sm text-white placeholder:text-zinc-600 focus:border-violet-500/50 focus:outline-none"
+              className="field-textarea-inset min-h-[8.5rem]"
             />
           </div>
         </div>
 
-        <div className="flex items-start gap-2 rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-3">
-          <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" />
-          <p className="text-xs leading-relaxed text-zinc-400">
+        <div className="flex items-start gap-2 rounded-xl border border-success/10 bg-success/5 p-3">
+          <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-success-fg" />
+          <p className="text-xs leading-relaxed text-muted">
             Your raw text is never shown to matches. Only a safe, human-readable twin summary appears in the app.
           </p>
         </div>
 
         <Link
           href="/integrations"
-          className="-mt-2 inline-flex items-center gap-2 text-sm text-violet-400 transition-colors hover:text-violet-300"
+          className="-mt-2 inline-flex items-center gap-2 text-sm text-accent transition-colors hover:text-accent-muted"
         >
           <Link2 className="h-4 w-4" />
           Connect integrations (coming soon)
@@ -316,7 +316,7 @@ export default function OnboardingIntake() {
 
         <button
           onClick={chooseQuestions}
-          className="text-center text-sm text-zinc-500 transition-colors hover:text-violet-400"
+          className="text-center text-sm text-subtle transition-colors hover:text-accent"
         >
           Skip to questions
         </button>
@@ -324,7 +324,7 @@ export default function OnboardingIntake() {
         <button
           onClick={proceedWithImport}
           disabled={!hasContent}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 py-4 text-lg font-semibold text-white transition-colors hover:bg-violet-500 disabled:opacity-40"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent-solid py-4 text-lg font-semibold text-accent-fg transition-colors hover:bg-accent-solid-hover disabled:opacity-40"
         >
           Build my twin
           <ArrowRight className="h-5 w-5" />

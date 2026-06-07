@@ -17,6 +17,7 @@ const KEY = {
   passedMatchIds: 'twinder_passed_match_ids',
   metMatchIds: 'twinder_met_match_ids',
   seenSwipeHint: 'twinder_seen_swipe_hint',
+  theme: 'twinder_theme',
 };
 
 function getJson<T>(key: string): T | null {
@@ -101,6 +102,9 @@ export const localStore = {
     localStorage.setItem(KEY.seenSwipeHint, v ? 'true' : 'false'),
 
   reset: () => {
-    Object.values(KEY).forEach(k => localStorage.removeItem(k));
+    Object.entries(KEY).forEach(([name, k]) => {
+      if (name === 'theme') return;
+      localStorage.removeItem(k);
+    });
   },
 };

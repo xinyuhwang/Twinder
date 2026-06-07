@@ -78,11 +78,11 @@ export function DivergentAssociationTask({
   return (
     <div className="flex flex-col gap-6 flex-1">
       <div className="space-y-1">
-        <h2 className="text-xl font-semibold text-white leading-snug">
+        <h2 className="text-xl font-semibold text-primary leading-snug">
           {done ? 'Got all 10.' : prompt}
         </h2>
         {count > 0 && (
-          <p className="text-sm text-zinc-500 tabular-nums">
+          <p className="text-sm text-subtle tabular-nums">
             {count} of {TOTAL}
           </p>
         )}
@@ -99,12 +99,12 @@ export function DivergentAssociationTask({
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            className="flex-1 px-4 py-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition-colors text-base"
+            className="field-input flex-1"
           />
           <button
             onClick={handleArrow}
             disabled={!arrowEnabled}
-            className="px-5 py-3.5 rounded-2xl bg-violet-600 text-white font-semibold hover:bg-violet-500 disabled:opacity-40 transition-colors flex-shrink-0"
+            className="px-5 py-3.5 rounded-2xl bg-accent-solid text-accent-fg font-semibold hover:bg-accent-solid-hover disabled:opacity-40 transition-colors flex-shrink-0"
           >
             <ArrowRight className="w-5 h-5" />
           </button>
@@ -116,7 +116,7 @@ export function DivergentAssociationTask({
           {words.map((w, i) => (
             <span
               key={i}
-              className="px-3 py-1 rounded-full bg-zinc-800 text-zinc-300 text-sm"
+              className="px-3 py-1 rounded-full bg-surface-2 text-secondary text-sm"
             >
               {w}
             </span>
@@ -128,7 +128,7 @@ export function DivergentAssociationTask({
         {done && (
           <button
             onClick={() => onComplete(words)}
-            className="w-full py-4 rounded-2xl bg-violet-600 text-white font-semibold hover:bg-violet-500 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-2xl bg-accent-solid text-accent-fg font-semibold hover:bg-accent-solid-hover transition-colors flex items-center justify-center gap-2"
           >
             Next
             <ArrowRight className="w-5 h-5" />
@@ -136,7 +136,7 @@ export function DivergentAssociationTask({
         )}
         <button
           onClick={onSkip}
-          className="w-full text-sm text-zinc-600 hover:text-zinc-400 transition-colors py-2"
+          className="w-full text-sm text-subtle hover:text-muted transition-colors py-2"
         >
           Skip
         </button>

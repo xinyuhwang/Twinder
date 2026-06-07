@@ -14,9 +14,9 @@ import { ArrowLeft, ArrowRight, Trophy } from 'lucide-react';
 
 function ScoreBadge({ score }: { score: number }) {
   const color =
-    score >= 80 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
-    score >= 60 ? 'bg-violet-500/20 text-violet-300 border-violet-500/30' :
-    'bg-zinc-800 text-zinc-400 border-zinc-700';
+    score >= 80 ? 'bg-success/20 text-success-fg border-success/30' :
+    score >= 60 ? 'badge-accent' :
+    'bg-surface-2 text-muted border-border-strong';
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold ${color}`}>
       <Trophy className="h-3.5 w-3.5" />
@@ -88,7 +88,7 @@ export default function MatchChatReplay() {
     return (
       <MobileShell>
         <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
         </div>
       </MobileShell>
     );
@@ -97,18 +97,18 @@ export default function MatchChatReplay() {
   return (
     <MobileShell>
       <div className="flex min-h-screen flex-col pb-24">
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-zinc-800/50 bg-[#0a0a0f]/90 px-4 py-3 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border/50 bg-nav-bg px-4 py-3 backdrop-blur">
           <button
             onClick={() => router.push('/matches')}
-            className="text-zinc-400 transition-colors hover:text-white"
+            className="text-muted transition-colors hover:text-primary"
             aria-label="Back"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <Avatar name={card.opponent_name} size="sm" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">{card.opponent_name}</p>
-            <p className="text-xs capitalize text-zinc-500">{card.match_type.replace(/_/g, ' ')}</p>
+            <p className="truncate text-sm font-semibold text-primary">{card.opponent_name}</p>
+            <p className="text-xs capitalize text-muted">{card.match_type.replace(/_/g, ' ')}</p>
           </div>
           <ScoreBadge score={card.score} />
         </div>
@@ -125,12 +125,12 @@ export default function MatchChatReplay() {
               >
                 <Avatar name={msg.sender} size="xs" />
                 <div className={`max-w-[78%] space-y-0.5 ${isMe ? 'flex flex-col items-end' : ''}`}>
-                  <p className="px-1 text-xs text-zinc-500">{msg.sender}</p>
+                  <p className="px-1 text-xs text-muted">{msg.sender}</p>
                   <div
-                    className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                    className={`rounded-2xl text-sm leading-relaxed ${
                       isMe
-                        ? 'rounded-tr-sm bg-violet-500/20 text-violet-100'
-                        : 'rounded-tl-sm bg-zinc-800 text-zinc-200'
+                        ? 'chat-bubble-self rounded-tr-sm'
+                        : 'chat-bubble-other rounded-tl-sm'
                     }`}
                   >
                     {msg.content}
@@ -140,14 +140,14 @@ export default function MatchChatReplay() {
             );
           })}
           {visibleCount < messages.length && (
-            <p className="text-center text-xs text-zinc-600">Replay in progress...</p>
+            <p className="text-center text-xs text-subtle">Replay in progress...</p>
           )}
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md border-t border-zinc-800/50 bg-[#0a0a0f]/95 px-5 py-4 backdrop-blur">
+        <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 border-t border-border/50 bg-nav-bg px-5 py-4 backdrop-blur">
           <button
             onClick={() => router.push(`/matches/${matchId}/summary`)}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 py-4 font-semibold text-white transition-colors hover:bg-violet-500"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent-solid py-4 font-semibold text-accent-fg transition-colors hover:bg-accent-solid-hover"
           >
             View Summary
             <ArrowRight className="h-5 w-5" />

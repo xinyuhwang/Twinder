@@ -21,7 +21,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     name: 'Haley',
     role: 'Social / emotional product thinker',
     persona: 'Social product thinker. Making networking less awkward for introverts. Emotionally safe social tools. Looking for thoughtful builders and people interested in social UX.',
-    avatarColor: 'bg-emerald-500',
+    avatarColor: 'bg-success',
     avatarInitials: 'HA',
   },
   {
@@ -53,7 +53,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     name: 'Priya',
     role: 'AI researcher, knowledge systems',
     persona: 'AI researcher. Personal knowledge management, AI memory, cognitive augmentation. Looking for product builders and people obsessed with learning.',
-    avatarColor: 'bg-violet-500',
+    avatarColor: 'bg-accent',
     avatarInitials: 'PR',
   },
   {

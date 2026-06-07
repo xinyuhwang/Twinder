@@ -59,7 +59,7 @@ export function TwinderCopilotPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/60"
+            className="fixed inset-0 z-40 bg-overlay"
             onClick={onClose}
           />
           <motion.div
@@ -67,16 +67,16 @@ export function TwinderCopilotPanel({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex max-h-[85vh] max-w-md flex-col rounded-t-3xl border border-zinc-800 bg-zinc-900"
+            className="fixed bottom-0 left-1/2 z-50 flex max-h-[85vh] w-full max-w-md -translate-x-1/2 flex-col rounded-t-3xl border border-border bg-surface"
           >
-            <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-              <div className="flex items-center gap-2 text-violet-400">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <div className="flex items-center gap-2 text-accent">
                 <Sparkles className="h-4 w-4" />
                 <span className="text-sm font-semibold">Agent Copilot</span>
               </div>
               <button
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition-colors hover:text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-muted transition-colors hover:text-primary"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -88,7 +88,7 @@ export function TwinderCopilotPanel({
                 <button
                   key={prompt}
                   onClick={() => handlePrompt(prompt)}
-                  className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-xs text-violet-300 transition-colors hover:bg-violet-500/20"
+                  className="rounded-full border border-accent/20 bg-accent/10 px-3 py-2 text-xs text-accent-muted transition-colors hover:bg-accent-solid-hover/20"
                 >
                   {prompt}
                 </button>

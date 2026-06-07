@@ -126,6 +126,9 @@ def test_intake_creates_profile_version_with_all_fields(client, session, test_us
     assert pv.version == 1
     assert pv.profile_yaml is not None and "identity_snapshot" in pv.profile_yaml
     assert pv.matching_vector is not None
+    stored = json.loads(pv.matching_vector)
+    assert "profile" in stored
+    assert stored["profile"]["twin_system_instruction_seed"]["identity"] == "Tester's digital twin"
     assert pv.system_instruction is not None and "Tester" in pv.system_instruction
 
 

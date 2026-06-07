@@ -85,12 +85,12 @@ export function AgentConversationViewer({
               <div
                 className={`max-w-[78%] space-y-0.5 ${isMe ? 'items-end flex flex-col' : ''}`}
               >
-                <p className="text-xs text-zinc-500 px-1">{msg.sender}</p>
+                <p className="text-xs text-muted px-1">{msg.sender}</p>
                 <div
-                  className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                  className={`rounded-2xl text-sm leading-relaxed ${
                     isMe
-                      ? 'bg-violet-500/20 text-violet-100 rounded-tr-sm'
-                      : 'bg-zinc-800 text-zinc-200 rounded-tl-sm'
+                      ? 'chat-bubble-self rounded-tr-sm'
+                      : 'chat-bubble-other rounded-tl-sm'
                   }`}
                 >
                   {msg.content}
@@ -102,14 +102,14 @@ export function AgentConversationViewer({
       </div>
 
       {error && (
-        <p className="text-xs text-red-400 px-1">{error}</p>
+        <p className="text-xs text-error-fg px-1">{error}</p>
       )}
 
       {conversationId && (
         <button
           onClick={() => setExpanded(v => !v)}
           disabled={loading}
-          className="flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors px-1"
+          className="flex items-center gap-1.5 text-xs text-accent hover:text-accent-muted transition-colors px-1"
         >
           {loading ? (
             <span>Loading full transcript...</span>

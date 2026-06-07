@@ -4,6 +4,7 @@ from typing import Optional
 import yaml
 from sqlmodel import Session, select
 
+from app.config import settings
 from app.llm import chat
 from app.models import ProfileVersion, User
 from app.observability import op
@@ -181,6 +182,7 @@ async def generate_profile(raw_context: str, answers: dict | None = None) -> str
     return await chat(
         messages=[{"role": "user", "content": user_content}],
         system=INTAKE_PROMPT,
+        model=settings.llm_intake_model,
         max_tokens=2000,
     )
 

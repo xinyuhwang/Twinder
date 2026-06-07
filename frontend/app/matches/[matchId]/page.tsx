@@ -28,7 +28,7 @@ import {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{title}</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-subtle">{title}</h3>
       <div>{children}</div>
     </div>
   );
@@ -36,7 +36,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Tag({ label }: { label: string }) {
   return (
-    <span className="inline-flex text-xs px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+    <span className="inline-flex text-xs px-2.5 py-1 rounded-full bg-surface-2 text-muted border border-border-strong">
       {label}
     </span>
   );
@@ -44,9 +44,9 @@ function Tag({ label }: { label: string }) {
 
 function ScoreBadge({ score }: { score: number }) {
   const color =
-    score >= 80 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
-    score >= 60 ? 'bg-violet-500/20 text-violet-300 border-violet-500/30' :
-    'bg-zinc-800 text-zinc-400 border-zinc-700';
+    score >= 80 ? 'bg-success/20 text-success-fg border-success/30' :
+    score >= 60 ? 'badge-accent' :
+    'bg-surface-2 text-muted border-border-strong';
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border ${color}`}>
       <Trophy className="w-3.5 h-3.5" />
@@ -126,7 +126,7 @@ export default function MatchDetail() {
     return (
       <MobileShell>
         <div className="flex flex-col min-h-screen items-center justify-center">
-          <div className="w-6 h-6 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
+          <div className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
         </div>
       </MobileShell>
     );
@@ -136,18 +136,18 @@ export default function MatchDetail() {
     <MobileShell>
       <div className="flex flex-col min-h-screen">
         {/* Sticky header */}
-        <div className="sticky top-0 z-10 bg-[#0a0a0f]/90 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-zinc-800/50">
+        <div className="sticky top-0 z-10 bg-nav-bg backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-border/50">
           <button
             onClick={() => router.push('/matches')}
-            className="text-zinc-400 hover:text-white transition-colors"
+            className="text-muted hover:text-primary transition-colors"
             aria-label="Back"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <Avatar name={card.opponent_name} size="sm" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white truncate">{card.opponent_name}</p>
-            <p className="text-xs text-zinc-500 capitalize">{card.match_type}</p>
+            <p className="text-sm font-semibold text-primary truncate">{card.opponent_name}</p>
+            <p className="text-xs text-subtle capitalize">{card.match_type.replace(/_/g, ' ')}</p>
           </div>
           <ScoreBadge score={card.score} />
         </div>
@@ -156,31 +156,31 @@ export default function MatchDetail() {
         <div className="flex-1 px-5 py-6 space-y-6 overflow-y-auto pb-28">
           {/* Headline */}
           <div className="space-y-2">
-            <h1 className="text-xl font-bold text-white leading-snug">{card.headline}</h1>
-            <p className="text-sm text-zinc-400 leading-relaxed">{card.summary}</p>
+            <h1 className="text-xl font-bold text-primary leading-snug">{card.headline}</h1>
+            <p className="text-sm text-muted leading-relaxed">{card.summary}</p>
           </div>
 
           {/* Why you should meet */}
           {card.strongest_overlap && (
             <Section title="Strongest overlap">
-              <div className="p-4 rounded-2xl bg-violet-500/5 border border-violet-500/20">
-                <p className="text-sm text-zinc-200 leading-relaxed">{card.strongest_overlap}</p>
+              <div className="p-4 rounded-2xl bg-accent/5 border border-accent/20">
+                <p className="text-sm text-secondary leading-relaxed">{card.strongest_overlap}</p>
               </div>
             </Section>
           )}
 
           {card.non_obvious_overlap && (
             <Section title="Non-obvious connection">
-              <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
-                <p className="text-sm text-zinc-300 leading-relaxed">{card.non_obvious_overlap}</p>
+              <div className="p-4 rounded-2xl bg-surface border border-border">
+                <p className="text-sm text-secondary leading-relaxed">{card.non_obvious_overlap}</p>
               </div>
             </Section>
           )}
 
           {card.complementary_dynamic && (
             <Section title="Complementary dynamic">
-              <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
-                <p className="text-sm text-zinc-300 leading-relaxed">{card.complementary_dynamic}</p>
+              <div className="p-4 rounded-2xl bg-surface border border-border">
+                <p className="text-sm text-secondary leading-relaxed">{card.complementary_dynamic}</p>
               </div>
             </Section>
           )}
@@ -188,11 +188,11 @@ export default function MatchDetail() {
           {/* Suggested opener */}
           {card.suggested_opener && (
             <Section title="Suggested opener">
-              <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
-                <p className="text-sm text-zinc-200 italic leading-relaxed">&quot;{card.suggested_opener}&quot;</p>
+              <div className="p-4 rounded-2xl bg-surface border border-border space-y-3">
+                <p className="text-sm text-secondary italic leading-relaxed">&quot;{card.suggested_opener}&quot;</p>
                 <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-accent hover:text-accent-muted transition-colors"
                 >
                   {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? 'Copied' : 'Copy opener'}
@@ -206,8 +206,8 @@ export default function MatchDetail() {
             <Section title="Follow-up questions">
               <ul className="space-y-2">
                 {card.follow_up_questions.map((q, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-sm text-zinc-400">
-                    <MessageSquare className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0 mt-0.5" />
+                  <li key={i} className="flex items-start gap-2.5 text-sm text-muted">
+                    <MessageSquare className="w-3.5 h-3.5 text-subtle flex-shrink-0 mt-0.5" />
                     {q}
                   </li>
                 ))}
@@ -231,14 +231,14 @@ export default function MatchDetail() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => openCopilot('Why should I meet this person?')}
-                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20 hover:bg-violet-500/20 transition-colors"
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full bg-accent/10 text-accent-muted border border-accent/20 hover:bg-accent-solid-hover/20 transition-colors"
               >
                 <Sparkles className="w-3 h-3" />
                 Ask my agent why
               </button>
               <button
                 onClick={() => openCopilot('Give me a less awkward opener')}
-                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full bg-surface-2 text-muted border border-border-strong hover:bg-border-strong transition-colors"
               >
                 <Zap className="w-3 h-3" />
                 Less awkward opener
@@ -248,35 +248,35 @@ export default function MatchDetail() {
 
           {/* Eavesdrop */}
           <Section title="Agent conversation">
-            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+            <div className="rounded-2xl bg-surface border border-border overflow-hidden">
               {!eavesdropOpen ? (
                 <button
                   onClick={() => setEavesdropOpen(true)}
-                  className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-zinc-800/50 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-surface-2/50 transition-colors"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Eye className="w-4 h-4 text-violet-400" />
+                    <Eye className="w-4 h-4 text-accent" />
                     <div>
-                      <p className="text-sm font-semibold text-white">Eavesdrop</p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-sm font-semibold text-primary">Eavesdrop</p>
+                      <p className="text-xs text-subtle">
                         {card.conversation_highlights.length > 0
                           ? `${card.conversation_highlights.length} highlights`
                           : 'See what your twin said'}
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs text-violet-400">Show</span>
+                  <span className="text-xs text-accent">Show</span>
                 </button>
               ) : (
                 <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-violet-400">
+                    <div className="flex items-center gap-2 text-accent">
                       <Eye className="w-4 h-4" />
                       <span className="text-sm font-semibold">Eavesdrop</span>
                     </div>
                     <button
                       onClick={() => setEavesdropOpen(false)}
-                      className="text-xs text-zinc-500 hover:text-zinc-300"
+                      className="text-xs text-subtle hover:text-secondary"
                     >
                       Hide
                     </button>
@@ -293,51 +293,51 @@ export default function MatchDetail() {
           </Section>
 
           {/* Privacy note */}
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
-            <Shield className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-zinc-500 leading-relaxed">
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-surface/60 border border-border/60">
+            <Shield className="w-4 h-4 text-success-fg flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-subtle leading-relaxed">
               Your raw profile data and conversation context were never shared directly. Only a twin summary was used.
             </p>
           </div>
         </div>
 
         {/* Fixed action bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md px-5 py-4 bg-[#0a0a0f]/95 backdrop-blur border-t border-zinc-800/50">
+        <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 px-5 py-4 bg-nav-bg backdrop-blur border-t border-border/50">
           <div className="grid grid-cols-4 gap-2">
             <button
               onClick={handlePass}
               disabled={isPassed}
-              className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-zinc-800 hover:bg-red-500/20 border border-zinc-700 hover:border-red-500/30 transition-colors group disabled:opacity-40"
+              className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-surface-2 hover:bg-error/20 border border-border-strong hover:border-error/30 transition-colors group disabled:opacity-40"
               aria-label="Pass"
             >
-              <X className="w-5 h-5 text-zinc-400 group-hover:text-red-400" />
-              <span className="text-xs text-zinc-500 group-hover:text-red-400">Pass</span>
+              <X className="w-5 h-5 text-muted group-hover:text-error-fg" />
+              <span className="text-xs text-subtle group-hover:text-error-fg">Pass</span>
             </button>
             <button
               onClick={() => openCopilot()}
-              className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-zinc-800 hover:bg-violet-500/20 border border-zinc-700 hover:border-violet-500/30 transition-colors group"
+              className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-surface-2 hover:bg-accent-solid-hover/20 border border-border-strong hover:border-accent/30 transition-colors group"
               aria-label="Ask agent"
             >
-              <Sparkles className="w-5 h-5 text-zinc-400 group-hover:text-violet-400" />
-              <span className="text-xs text-zinc-500 group-hover:text-violet-400">Copilot</span>
+              <Sparkles className="w-5 h-5 text-muted group-hover:text-accent" />
+              <span className="text-xs text-subtle group-hover:text-accent">Copilot</span>
             </button>
             <button
               onClick={handleSave}
               disabled={isSaved}
-              className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-zinc-800 hover:bg-emerald-500/20 border border-zinc-700 hover:border-emerald-500/30 transition-colors group disabled:opacity-40"
+              className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-surface-2 hover:bg-success/20 border border-border-strong hover:border-success/30 transition-colors group disabled:opacity-40"
               aria-label="Save"
             >
-              <Bookmark className={`w-5 h-5 ${isSaved ? 'text-emerald-400 fill-emerald-400' : 'text-zinc-400 group-hover:text-emerald-400'}`} />
-              <span className={`text-xs ${isSaved ? 'text-emerald-400' : 'text-zinc-500 group-hover:text-emerald-400'}`}>Save</span>
+              <Bookmark className={`w-5 h-5 ${isSaved ? 'text-success-fg fill-success-fg' : 'text-muted group-hover:text-success-fg'}`} />
+              <span className={`text-xs ${isSaved ? 'text-success-fg' : 'text-subtle group-hover:text-success-fg'}`}>Save</span>
             </button>
             <button
               onClick={() => setMeetOpen(true)}
               disabled={isMet}
-              className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 border border-violet-500 transition-colors group disabled:bg-zinc-800 disabled:border-zinc-700"
+              className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-accent-solid hover:bg-accent-solid-hover border border-accent transition-colors group disabled:bg-surface-2 disabled:border-border-strong"
               aria-label="Meet"
             >
-              <Heart className={`w-5 h-5 ${isMet ? 'text-emerald-400' : 'text-white'}`} />
-              <span className={`text-xs ${isMet ? 'text-emerald-400' : 'text-white'}`}>{isMet ? 'Sent' : 'Meet'}</span>
+              <Heart className={`w-5 h-5 ${isMet ? 'text-success-fg' : 'text-accent-fg'}`} />
+              <span className={`text-xs ${isMet ? 'text-success-fg' : 'text-accent-fg'}`}>{isMet ? 'Sent' : 'Meet'}</span>
             </button>
           </div>
         </div>

@@ -155,12 +155,12 @@ export default function Arena() {
     <MobileShell>
       <div className="flex flex-col min-h-screen px-6 py-10 gap-6">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-medium">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent-muted text-xs font-medium">
             <Zap className="w-3 h-3" />
             Arena — {eventMode}
           </div>
-          <h1 className="text-2xl font-bold text-white">Your twin is in the room</h1>
-          <p className="text-zinc-500 text-sm">
+          <h1 className="text-2xl font-bold text-primary">Your twin is in the room</h1>
+          <p className="text-subtle text-sm">
             {done ? 'Conversations complete. Your matches are ranked.' : 'Conversations happening now...'}
           </p>
         </div>
@@ -209,7 +209,7 @@ export default function Arena() {
 
             {!done && (
               <div
-                className="absolute inset-6 rounded-full border border-violet-500/20 animate-ping"
+                className="absolute inset-6 rounded-full border border-accent/20 animate-ping"
                 style={{ animationDuration: '2.5s' }}
               />
             )}
@@ -228,13 +228,13 @@ export default function Arena() {
                     exit={{ opacity: 0 }}
                     className="flex items-center gap-2 text-sm"
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${i === 0 ? 'bg-violet-400' : 'bg-zinc-700'}`} />
-                    <span className={i === 0 ? 'text-zinc-200' : 'text-zinc-600'}>{item}</span>
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${i === 0 ? 'bg-accent' : 'bg-border-strong'}`} />
+                    <span className={i === 0 ? 'text-secondary' : 'text-subtle'}>{item}</span>
                   </motion.div>
                 ))}
               </AnimatePresence>
               {!done && feedItems.length === 0 && (
-                <p className="text-zinc-600 text-sm">Starting conversations...</p>
+                <p className="text-subtle text-sm">Starting conversations...</p>
               )}
             </div>
 
@@ -244,10 +244,10 @@ export default function Arena() {
                 { label: 'Matches', value: matchesFound > 0 ? String(matchesFound) : done ? '0' : '...', icon: Trophy },
                 { label: 'Top score', value: topScore !== null ? `${topScore}%` : '...', icon: Star },
               ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-center space-y-1">
-                  <Icon className="w-4 h-4 text-violet-400 mx-auto" />
-                  <p className="text-xl font-bold text-white">{value}</p>
-                  <p className="text-xs text-zinc-500">{label}</p>
+                <div key={label} className="p-3 rounded-xl bg-surface border border-border text-center space-y-1">
+                  <Icon className="w-4 h-4 text-accent mx-auto" />
+                  <p className="text-xl font-bold text-primary">{value}</p>
+                  <p className="text-xs text-subtle">{label}</p>
                 </div>
               ))}
             </div>
@@ -256,21 +256,21 @@ export default function Arena() {
 
         {error && (
           <div className="flex flex-1 flex-col justify-center gap-4 py-6">
-            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-5 text-center space-y-2">
-              <p className="text-lg font-semibold text-red-300">Arena run failed</p>
-              <p className="text-sm text-red-400/90">{error}</p>
+            <div className="rounded-2xl border border-error/20 bg-error/10 px-5 py-5 text-center space-y-2">
+              <p className="text-lg font-semibold text-error-fg">Arena run failed</p>
+              <p className="text-sm text-error-fg/90">{error}</p>
             </div>
             <button
               onClick={() => runArena(true)}
               disabled={retrying}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 py-4 text-lg font-semibold text-white transition-colors hover:bg-violet-500 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent-solid py-4 text-lg font-semibold text-accent-fg transition-colors hover:bg-accent-solid-hover disabled:opacity-60"
             >
               <RefreshCw className={`w-5 h-5 ${retrying ? 'animate-spin' : ''}`} />
               {retrying ? 'Retrying...' : 'Try again'}
             </button>
             <button
               onClick={() => router.push('/demo')}
-              className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 py-3.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
+              className="w-full rounded-2xl border border-border bg-surface py-3.5 text-sm font-medium text-secondary transition-colors hover:bg-surface-2"
             >
               Back to demo
             </button>
@@ -284,7 +284,7 @@ export default function Arena() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => router.push('/matches')}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 py-4 text-lg font-semibold text-white transition-colors hover:bg-violet-500"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent-solid py-4 text-lg font-semibold text-accent-fg transition-colors hover:bg-accent-solid-hover"
           >
             View Matches ({cards.length})
             <ArrowRight className="w-5 h-5" />
@@ -292,8 +292,8 @@ export default function Arena() {
         )}
 
         {!error && !done && cards.length === 0 && (
-          <div className="flex items-center justify-center gap-2 py-3 text-zinc-600 text-sm">
-            <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+          <div className="flex items-center justify-center gap-2 py-3 text-subtle text-sm">
+            <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
             Conversations in progress — first matches appear in ~10-15s
           </div>
         )}
@@ -301,7 +301,7 @@ export default function Arena() {
         {!error && (
           <button
             onClick={() => router.push('/demo')}
-            className="text-center text-xs text-zinc-700 hover:text-zinc-500 transition-colors"
+            className="text-center text-xs text-subtle hover:text-subtle transition-colors"
           >
             Back to demo
           </button>

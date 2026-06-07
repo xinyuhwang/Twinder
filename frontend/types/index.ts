@@ -43,6 +43,7 @@ export interface TwinPreview {
   public_safe_summary: string | null;
   looking_for: string[];
   interests: string[];
+  twin_prompt?: string | null;
 }
 
 export interface DatResult {

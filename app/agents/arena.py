@@ -5,7 +5,7 @@ import uuid
 
 from sqlmodel import select
 
-from app.agents.dat import openness_compatibility
+from app.agents.json_parse import parse_llm_json
 from app.agents.prompts import MATCH_CARD_SCORING_PROMPT, TWIN_OPENER
 from app.agents.twin_prompt import build_twin_system_prompt, persona_with_openness
 from app.database import get_session
@@ -210,17 +210,11 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str, session) ->
     try:
         result_raw = await chat(
             messages=[{"role": "user", "content": scoring_prompt}],
-            max_tokens=800,
+            max_tokens=1500,
         )
-        match_card = _parse_json(result_raw)
-    except Exception as e:
-        match_card = {
-            "score": 50,
-            "headline": f"Connection with {user_b.name}",
-            "match_type": "unexpected_connection",
-            "summary": f"Unable to fully evaluate: {e}",
-            "common_interests": [],
-        }
+        match_card = parse_llm_json(result_raw)
+    except Exception:
+        match_card = _fallback_match_card(user_a, user_b)
 
     # Blend in openness compatibility (similarity of divergent-thinking scores).
     compat = openness_compatibility(user_a.dat_score, user_b.dat_score)
@@ -243,22 +237,3 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str, session) ->
 
     return match_card
 
-
-def _parse_json(text: str) -> dict:
-    """Extract JSON from LLM response, handling markdown code blocks."""
-    text = text.strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-
-    match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
-    if match:
-        return json.loads(match.group(1).strip())
-
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    if start >= 0 and end > start:
-        return json.loads(text[start:end])
-
-    raise ValueError(f"Could not parse JSON from: {text[:200]}")

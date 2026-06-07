@@ -46,11 +46,16 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  intake: (token: string, body: { raw_context: string; answers?: Record<string, string> | null }) =>
+  intake: (token: string, body: { raw_context: string; answers?: Record<string, string> | null; mode?: string }) =>
     request<TwinPreview>('/users/me/intake', {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify(body),
+    }),
+
+  getTwinPrompt: (token: string, mode: string) =>
+    request<{ mode: string; twin_prompt: string }>(`/users/me/twin-prompt?mode=${encodeURIComponent(mode)}`, {
+      headers: authHeaders(token),
     }),
 
   dat: (token: string, words: string[]) =>

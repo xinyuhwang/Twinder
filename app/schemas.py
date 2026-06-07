@@ -123,6 +123,24 @@ class TwinPromptResponse(BaseModel):
     twin_prompt: str
 
 
+class ExistingTwinResponse(BaseModel):
+    has_profile: bool
+    version: Optional[int] = None
+    preview: Optional[TwinPreview] = None
+    system_instruction: Optional[str] = None
+    twin_prompt: Optional[str] = None
+
+
+class SystemInstructionUpdate(BaseModel):
+    system_instruction: str
+    create_new_version: bool = False
+
+
+class SystemInstructionResponse(BaseModel):
+    version: int
+    system_instruction: str
+
+
 class FeedbackIn(BaseModel):
     verdict: str            # save | pass | meet
     rating: Optional[int] = None

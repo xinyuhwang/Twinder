@@ -5,6 +5,7 @@ import type {
   TwinPreview,
   ArenaResponse,
   DatResult,
+  ExistingTwinResponse,
 } from '@/types';
 
 export interface PreflightResponse {
@@ -68,6 +69,18 @@ export const api = {
   getTwinPrompt: (token: string, mode: string) =>
     request<{ mode: string; twin_prompt: string }>(`/users/me/twin-prompt?mode=${encodeURIComponent(mode)}`, {
       headers: authHeaders(token),
+    }),
+
+  getExistingTwin: (token: string, mode: string) =>
+    request<ExistingTwinResponse>(`/users/me/twin?mode=${encodeURIComponent(mode)}`, {
+      headers: authHeaders(token),
+    }),
+
+  updateSystemInstruction: (token: string, system_instruction: string, create_new_version: boolean) =>
+    request<{ version: number; system_instruction: string }>('/users/me/system-instruction', {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ system_instruction, create_new_version }),
     }),
 
   dat: (token: string, words: string[]) =>

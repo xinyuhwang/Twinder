@@ -1,8 +1,5 @@
 from contextlib import asynccontextmanager
 
-import litellm
-litellm._turn_on_debug()
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware

@@ -75,6 +75,14 @@ export interface UserUpdate {
   persona?: string;
 }
 
+export interface ExistingTwinResponse {
+  has_profile: boolean;
+  version: number | null;
+  preview: TwinPreview | null;
+  system_instruction: string | null;
+  twin_prompt: string | null;
+}
+
 export interface MessageRead {
   id: string;
   sender_user_id: string;

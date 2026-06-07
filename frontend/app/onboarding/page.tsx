@@ -17,6 +17,9 @@ import {
   ChevronUp,
   FileUp,
   MessageSquare,
+  Sparkles,
+  PlusCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 const STEPS = [
@@ -27,7 +30,7 @@ const STEPS = [
   'Upload the file or paste the YAML here',
 ];
 
-type OnboardingPath = 'choose' | 'import';
+type OnboardingPath = 'loading' | 'decide' | 'choose' | 'import';
 
 function buildRawContext(links: string, paste: string, fileNote: string | null): string {
   const parts: string[] = [];
@@ -47,7 +50,7 @@ function buildRawContext(links: string, paste: string, fileNote: string | null):
 export default function OnboardingIntake() {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [path, setPath] = useState<OnboardingPath>('choose');
+  const [path, setPath] = useState<OnboardingPath>('loading');
   const [links, setLinks] = useState('');
   const [paste, setPaste] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
@@ -58,20 +61,95 @@ export default function OnboardingIntake() {
   const [preflight, setPreflight] = useState(false);
 
   useEffect(() => {
-    if (!localStore.getToken()) {
+    const token = localStore.getToken();
+    if (!token) {
       router.replace('/demo');
       return;
     }
     setPaste(localStore.getRawContext() ?? '');
+
+    const mode = localStore.getEventMode();
+    api.getExistingTwin(token, mode)
+      .then(res => {
+        if (res.has_profile) {
+          setPath('decide');
+        } else {
+          localStore.setPersonaSource('new');
+          setPath('choose');
+        }
+      })
+      .catch(() => {
+        localStore.setPersonaSource('new');
+        setPath('choose');
+      });
+
     setMounted(true);
   }, [router]);
 
-  if (!mounted || preflight) {
+  if (!mounted || preflight || path === 'loading') {
     return (
       <MobileShell>
         <div className="flex min-h-screen flex-col items-center justify-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           {preflight && <p className="text-sm text-subtle">Building your questions…</p>}
+        </div>
+      </MobileShell>
+    );
+  }
+
+  if (path === 'decide') {
+    return (
+      <MobileShell>
+        <div className="flex min-h-screen flex-col gap-6 px-6 py-10">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-primary">Welcome back</h1>
+            <p className="text-sm text-subtle">
+              You have a saved twin. Jump straight to preview and tune it, or build a fresh one.
+            </p>
+          </div>
+
+          <div className="flex flex-1 flex-col gap-3">
+            <button
+              onClick={() => {
+                localStore.setPersonaSource('existing');
+                router.push('/onboarding/preview');
+              }}
+              className="flex w-full items-start gap-4 rounded-2xl border border-accent/40 bg-accent/10 p-5 text-left transition-colors hover:border-accent/60"
+            >
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-accent/20">
+                <Sparkles className="h-5 w-5 text-accent-muted" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-primary">Use my existing twin</span>
+                  <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs text-accent-muted">
+                    Recommended
+                  </span>
+                </div>
+                <p className="text-sm text-muted">
+                  Load your saved profile. Review and optionally tune the system prompt before the arena.
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                localStore.setPersonaSource('new');
+                setPath('choose');
+              }}
+              className="flex w-full items-start gap-4 rounded-2xl border border-border bg-surface p-5 text-left transition-colors hover:border-border-strong"
+            >
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-surface-2">
+                <PlusCircle className="h-5 w-5 text-muted" />
+              </div>
+              <div className="space-y-1">
+                <span className="font-semibold text-primary">Create a new twin</span>
+                <p className="text-sm text-muted">
+                  Start from scratch — import data or answer questions to build a fresh profile.
+                </p>
+              </div>
+            </button>
+          </div>
         </div>
       </MobileShell>
     );

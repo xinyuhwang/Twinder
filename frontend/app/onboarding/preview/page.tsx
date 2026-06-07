@@ -13,6 +13,8 @@ import {
 } from '@/lib/preview';
 import type { TwinPreview } from '@/types';
 
+type SaveMode = 'overwrite' | 'new_version';
+
 async function submitDatInBackground(token: string, datWordsCsv: string) {
   const words = datWordsCsv
     .split(',')
@@ -42,6 +44,9 @@ export default function OnboardingPreview() {
   const router = useRouter();
   const [preview, setPreview] = useState<AgentPreviewDisplay | null>(null);
   const [twinPrompt, setTwinPrompt] = useState<string | null>(null);
+  const [editedPrompt, setEditedPrompt] = useState<string>('');
+  const [originalPrompt, setOriginalPrompt] = useState<string>('');
+  const [saveMode, setSaveMode] = useState<SaveMode>('overwrite');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +61,8 @@ export default function OnboardingPreview() {
     const answers = localStore.getOnboardingAnswers();
     const hasAnswers = answers && Object.values(answers).some(v => v.trim());
     const hasInput = Boolean(rawContext) || Boolean(hasAnswers);
-    const personaId = localStore.getPersonaId();
+    const authMethod = localStore.getAuthMethod();
+    const personaId = authMethod === 'demo' ? localStore.getPersonaId() : null;
     const persona = personaId ? (DEMO_PERSONAS.find(p => p.id === personaId) ?? null) : null;
     const userName = localStore.getUserName();
     const mode = localStore.getEventMode();
@@ -73,6 +79,26 @@ export default function OnboardingPreview() {
 
     async function load() {
       try {
+        // If the user chose to reuse their existing profile, load it from the DB directly.
+        if (localStore.getPersonaSource() === 'existing') {
+          const existing = await api.getExistingTwin(token!, mode);
+          if (existing.has_profile) {
+            const derived = buildPreviewFromTwinPreview(
+              existing.preview ?? { public_safe_summary: null, looking_for: [], interests: [] },
+              persona,
+              userName,
+            );
+            setPreview(derived);
+            const baseInstruction = existing.system_instruction ?? '';
+            setTwinPrompt(baseInstruction);
+            setEditedPrompt(baseInstruction);
+            setOriginalPrompt(baseInstruction);
+            setLoading(false);
+            return;
+          }
+          // Profile vanished between decide and preview — fall through to normal path.
+        }
+
         // If we already have a cached preview, restore it immediately — no rebuild needed.
         const cached = localStore.getTwinPreview();
         if (cached) {
@@ -80,8 +106,11 @@ export default function OnboardingPreview() {
           setPreview(derived);
           if (cached.twin_prompt) {
             setTwinPrompt(cached.twin_prompt);
+            setEditedPrompt(cached.twin_prompt);
+            setOriginalPrompt(cached.twin_prompt);
           } else {
-            await loadTwinPrompt();
+            const prompt = await loadTwinPrompt();
+            if (prompt) { setEditedPrompt(prompt); setOriginalPrompt(prompt); }
           }
           setLoading(false);
           return;
@@ -116,6 +145,8 @@ export default function OnboardingPreview() {
           const derived = buildPreviewFromTwinPreview(twin, persona, userName);
           setPreview(derived);
           setTwinPrompt(twin.twin_prompt ?? null);
+          setEditedPrompt(twin.twin_prompt ?? '');
+          setOriginalPrompt(twin.twin_prompt ?? '');
           localStore.setTwinPreview(twin);
           return;
         }
@@ -130,6 +161,8 @@ export default function OnboardingPreview() {
         const derived = buildPreviewFromTwinPreview(twin, persona, userName);
         setPreview(derived);
         setTwinPrompt(twin.twin_prompt ?? null);
+        setEditedPrompt(twin.twin_prompt ?? '');
+        setOriginalPrompt(twin.twin_prompt ?? '');
         localStore.setTwinPreview(twin);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not build twin preview. Is the backend running?');
@@ -165,6 +198,20 @@ export default function OnboardingPreview() {
       };
       localStore.setTwinPreview(twin);
       await syncPersonaIfEmpty(token, preview.summary);
+
+      // Persist the edited system instruction if it changed.
+      const trimmedEdit = editedPrompt.trim();
+      if (trimmedEdit && trimmedEdit !== originalPrompt.trim()) {
+        try {
+          await api.updateSystemInstruction(
+            token,
+            trimmedEdit,
+            saveMode === 'new_version',
+          );
+        } catch {
+          // Non-blocking — arena still works with the existing prompt.
+        }
+      }
     }
     router.push('/arena');
   }
@@ -190,6 +237,10 @@ export default function OnboardingPreview() {
             key={preview?.agentName ?? 'loading'}
             preview={preview ?? buildPreviewFromPersona(DEMO_PERSONAS[0])}
             twinPrompt={twinPrompt}
+            editedPrompt={editedPrompt}
+            onPromptChange={setEditedPrompt}
+            saveMode={saveMode}
+            onSaveModeChange={setSaveMode}
             onPreviewChange={setPreview}
             onApprove={handleApprove}
             loading={loading}

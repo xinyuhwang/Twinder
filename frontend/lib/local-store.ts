@@ -20,6 +20,7 @@ const KEY = {
   theme: 'twinder_theme',
   preflightQuestions: 'twinder_preflight_questions',
   preflightProfileYaml: 'twinder_preflight_profile_yaml',
+  personaSource: 'twinder_persona_source',
 };
 
 function getJson<T>(key: string): T | null {
@@ -112,6 +113,13 @@ export const localStore = {
     localStorage.removeItem(KEY.preflightQuestions);
     localStorage.removeItem(KEY.preflightProfileYaml);
   },
+
+  getPersonaSource: (): 'existing' | 'new' | null => {
+    const v = typeof window !== 'undefined' ? localStorage.getItem(KEY.personaSource) : null;
+    if (v === 'existing' || v === 'new') return v;
+    return null;
+  },
+  setPersonaSource: (v: 'existing' | 'new') => localStorage.setItem(KEY.personaSource, v),
 
   reset: () => {
     Object.entries(KEY).forEach(([name, k]) => {

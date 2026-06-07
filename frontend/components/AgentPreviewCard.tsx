@@ -9,11 +9,17 @@ import { Avatar } from '@/components/Avatar';
 import { TwinderCopilotPanel } from '@/components/TwinderCopilotPanel';
 import { PREVIEW_COPILOT_INSTRUCTIONS } from '@/lib/copilot';
 import type { AgentPreviewDisplay } from '@/lib/preview';
-import { ArrowRight, ChevronDown, ChevronUp, Shield, Sparkles } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Shield, Sparkles, GitBranch, Pencil } from 'lucide-react';
+
+type SaveMode = 'overwrite' | 'new_version';
 
 interface AgentPreviewCardProps {
   preview: AgentPreviewDisplay;
   twinPrompt?: string | null;
+  editedPrompt?: string;
+  onPromptChange?: (prompt: string) => void;
+  saveMode?: SaveMode;
+  onSaveModeChange?: (mode: SaveMode) => void;
   onPreviewChange?: (preview: AgentPreviewDisplay) => void;
   onApprove: () => void;
   loading?: boolean;
@@ -22,6 +28,10 @@ interface AgentPreviewCardProps {
 export function AgentPreviewCard({
   preview,
   twinPrompt,
+  editedPrompt,
+  onPromptChange,
+  saveMode = 'overwrite',
+  onSaveModeChange,
   onPreviewChange,
   onApprove,
   loading = false,
@@ -31,6 +41,7 @@ export function AgentPreviewCard({
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const [promptExpanded, setPromptExpanded] = useState(false);
   const display = { ...preview, ...patch };
+  const currentPrompt = editedPrompt ?? twinPrompt ?? '';
 
   function updateDisplay(next: AgentPreviewDisplay) {
     onPreviewChange?.(next);
@@ -39,6 +50,11 @@ export function AgentPreviewCard({
   useCopilotReadable({
     description: 'Current twin preview display shown to the user',
     value: display,
+  });
+
+  useCopilotReadable({
+    description: 'Current agent system prompt (editable)',
+    value: currentPrompt,
   });
 
   useCopilotAdditionalInstructions({
@@ -79,6 +95,24 @@ export function AgentPreviewCard({
       setPatch(prev => ({ ...prev, ...nextPatch }));
       updateDisplay(next);
       return 'Preview updated.';
+    },
+  });
+
+  useCopilotAction({
+    name: 'apply_prompt_edit',
+    description: 'Apply a rewritten agent system prompt to the editable textarea.',
+    parameters: [
+      {
+        name: 'system_prompt',
+        type: 'string',
+        description: 'The rewritten system prompt text',
+        required: true,
+      },
+    ],
+    handler: async ({ system_prompt }) => {
+      if (!system_prompt?.trim()) return 'No prompt text provided.';
+      onPromptChange?.(system_prompt);
+      return 'System prompt updated in the editor.';
     },
   });
 
@@ -146,25 +180,55 @@ export function AgentPreviewCard({
           </ul>
         </div>
 
-        {twinPrompt && (
+        {(twinPrompt || editedPrompt) && (
           <div className="overflow-hidden rounded-2xl border border-border bg-surface">
             <button
               onClick={() => setPromptExpanded(v => !v)}
               className="flex w-full items-center justify-between px-4 py-3.5 text-left"
             >
-              <span className="text-sm font-semibold text-primary">Agent system prompt</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-primary">Agent system prompt</span>
+                <span className="flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent-muted">
+                  <Pencil className="h-3 w-3" />
+                  editable
+                </span>
+              </div>
               {promptExpanded
                 ? <ChevronUp className="h-4 w-4 flex-shrink-0 text-subtle" />
                 : <ChevronDown className="h-4 w-4 flex-shrink-0 text-subtle" />}
             </button>
             {promptExpanded && (
-              <div className="border-t border-border px-4 pb-4 pt-3">
-                <p className="mb-2 text-xs text-subtle">
-                  This is what your twin actually sees in arena conversations. Review it before approving.
+              <div className="border-t border-border px-4 pb-4 pt-3 space-y-3">
+                <p className="text-xs text-subtle">
+                  Edit how your twin behaves in conversations. CopilotKit can also rewrite this for you.
                 </p>
-                <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-xl border border-border bg-bg p-3 text-xs leading-relaxed text-secondary">
-                  {twinPrompt}
-                </pre>
+                <textarea
+                  value={currentPrompt}
+                  onChange={e => onPromptChange?.(e.target.value)}
+                  rows={10}
+                  className="w-full rounded-xl border border-border bg-bg p-3 text-xs leading-relaxed text-secondary resize-y focus:outline-none focus:ring-1 focus:ring-accent/40"
+                  placeholder="Your agent's system instructions…"
+                />
+                {onSaveModeChange && (
+                  <div className="flex items-center gap-2">
+                    <GitBranch className="h-3.5 w-3.5 text-subtle flex-shrink-0" />
+                    <span className="text-xs text-muted">On save:</span>
+                    <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+                      <button
+                        onClick={() => onSaveModeChange('overwrite')}
+                        className={`px-3 py-1.5 transition-colors ${saveMode === 'overwrite' ? 'bg-accent/20 text-accent-muted font-medium' : 'bg-surface text-subtle hover:text-secondary'}`}
+                      >
+                        Update in place
+                      </button>
+                      <button
+                        onClick={() => onSaveModeChange('new_version')}
+                        className={`px-3 py-1.5 border-l border-border transition-colors ${saveMode === 'new_version' ? 'bg-accent/20 text-accent-muted font-medium' : 'bg-surface text-subtle hover:text-secondary'}`}
+                      >
+                        Save as new version
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -173,7 +237,8 @@ export function AgentPreviewCard({
         <div className="space-y-2 pt-2">
           <button
             onClick={onApprove}
-            className="w-full py-4 rounded-2xl bg-accent-solid text-accent-fg font-semibold text-lg hover:bg-accent-solid-hover transition-colors flex items-center justify-center gap-2"
+            disabled={editedPrompt !== undefined && !editedPrompt.trim()}
+            className="w-full py-4 rounded-2xl bg-accent-solid text-accent-fg font-semibold text-lg hover:bg-accent-solid-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Approve twin
             <ArrowRight className="w-5 h-5" />

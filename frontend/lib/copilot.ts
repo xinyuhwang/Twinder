@@ -5,6 +5,7 @@ export function getCopilotPrompts(surface: CopilotSurface): string[] {
     return [
       'Make my privacy stricter',
       'Make this sound more like me',
+      'Rewrite my agent\'s instructions',
       'Ask my agent to improve this',
     ];
   }
@@ -22,6 +23,7 @@ export const PREVIEW_COPILOT_INSTRUCTIONS = `You are Twinder's twin preview copi
 When the user asks to edit voice or sound more like them, call edit_agent_voice with summary and current_voice from the twin preview context.
 When they ask for stricter privacy, call make_privacy_stricter.
 When they ask to improve the profile, call improve_profile with the preview JSON from context.
+When the user asks to rewrite, edit, or change the agent's system prompt or instructions, call edit_system_prompt with the current agent system prompt from context and their instruction. After it returns, call apply_prompt_edit with the returned system_prompt value.
 After edit_agent_voice or make_privacy_stricter returns new fields, call apply_preview_edits with summary, agent_voice, and/or privacy_settings.
 Be concise and friendly.`;
 

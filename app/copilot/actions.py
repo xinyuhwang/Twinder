@@ -78,6 +78,25 @@ async def improve_profile(preview_json: str) -> dict:
     return {"message": suggestions.strip()}
 
 
+async def edit_system_prompt(current_prompt: str, instruction: str = "Make this more natural and effective") -> dict:
+    system = (
+        "You rewrite Twinder agent system prompts. "
+        "Return only valid JSON with key system_prompt containing the rewritten prompt. "
+        "Preserve the user's core identity and privacy rules. Make it more natural and effective."
+    )
+    user = (
+        f"Instruction: {instruction}\n\n"
+        f"Current system prompt:\n{current_prompt}\n\n"
+        'Return JSON: {"system_prompt": "..."}'
+    )
+    raw = await chat([{"role": "user", "content": user}], system=system, max_tokens=2000)
+    parsed = _parse_json(raw)
+    return {
+        "system_prompt": parsed.get("system_prompt") or current_prompt,
+        "message": "System prompt updated. Review it in the editor and approve when ready.",
+    }
+
+
 async def explain_match(card_json: str, question: str) -> dict:
     system = (
         "You are Twinder's match copilot. Answer using only the match card data provided. "
@@ -133,6 +152,25 @@ def build_actions() -> list[Action]:
                 },
             ],
             handler=improve_profile,
+        ),
+        Action(
+            name="edit_system_prompt",
+            description="Rewrite the agent system prompt based on user instructions.",
+            parameters=[
+                {
+                    "name": "current_prompt",
+                    "type": "string",
+                    "description": "The current agent system prompt text",
+                    "required": True,
+                },
+                {
+                    "name": "instruction",
+                    "type": "string",
+                    "description": "How the user wants the prompt changed",
+                    "required": False,
+                },
+            ],
+            handler=edit_system_prompt,
         ),
         Action(
             name="explain_match",

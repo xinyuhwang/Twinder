@@ -10,14 +10,33 @@ from app.agents.profile import (
     _rich_scoring_context_from_synthesis,
     _to_twin_preview,
     generate_profile,
+    get_active_profile,
     new_profile_version,
 )
-from app.agents.synthesis import build_system_instruction, synthesize_profile
+from app.agents.synthesis import (
+    build_system_instruction,
+    is_stub_instruction,
+    load_synthesis_from_profile_version,
+    synthesize_profile,
+)
 from app.agents.twin_prompt import build_twin_system_prompt
 from app.database import get_session
 from app.deps import get_current_user
 from app.models import User
-from app.schemas import DatRequest, DatResult, IntakeRequest, PreflightRequest, PreflightResponse, TwinPreview, TwinPromptResponse, UserRead, UserUpdate
+from app.schemas import (
+    DatRequest,
+    DatResult,
+    ExistingTwinResponse,
+    IntakeRequest,
+    PreflightRequest,
+    PreflightResponse,
+    SystemInstructionResponse,
+    SystemInstructionUpdate,
+    TwinPreview,
+    TwinPromptResponse,
+    UserRead,
+    UserUpdate,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -95,6 +114,69 @@ async def get_twin_prompt(
         mode=mode,
         twin_prompt=build_twin_system_prompt(user, mode, session),
     )
+
+
+@router.get("/me/twin", response_model=ExistingTwinResponse)
+async def get_existing_twin(
+    mode: str = "networking",
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Return whether the user has a saved profile, its public-safe preview, and base system instruction."""
+    pv = get_active_profile(session, user.id)
+    if not pv:
+        return ExistingTwinResponse(has_profile=False)
+
+    synthesis = load_synthesis_from_profile_version(pv.matching_vector)
+    preview = None
+    if synthesis.get("profile"):
+        preview = TwinPreview(**_to_twin_preview(synthesis, pv.profile_yaml or ""))
+
+    base = pv.system_instruction
+    if (not base or is_stub_instruction(base)) and synthesis.get("profile"):
+        rebuilt = build_system_instruction(synthesis, user.name)
+        if not is_stub_instruction(rebuilt):
+            base = rebuilt
+
+    return ExistingTwinResponse(
+        has_profile=True,
+        version=pv.version,
+        preview=preview,
+        system_instruction=base,
+        twin_prompt=build_twin_system_prompt(user, mode, session),
+    )
+
+
+@router.put("/me/system-instruction", response_model=SystemInstructionResponse)
+async def update_system_instruction(
+    body: SystemInstructionUpdate,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Persist an edited system instruction — overwrite active version or create a new one."""
+    pv = get_active_profile(session, user.id)
+    if not pv:
+        raise HTTPException(status_code=404, detail="No profile to edit. Run intake first.")
+
+    text = body.system_instruction.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="system_instruction cannot be empty")
+
+    if body.create_new_version:
+        pv = new_profile_version(
+            session,
+            user.id,
+            profile_yaml=pv.profile_yaml,
+            matching_vector=pv.matching_vector,
+            system_instruction=text,
+        )
+    else:
+        pv.system_instruction = text
+        session.add(pv)
+
+    session.commit()
+    session.refresh(pv)
+    return SystemInstructionResponse(version=pv.version, system_instruction=pv.system_instruction)
 
 
 @router.post("/me/dat", response_model=DatResult)

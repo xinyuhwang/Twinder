@@ -91,8 +91,9 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
     else:
         opponents = session.exec(select(User).where(User.id != user_id)).all()
 
-    # Cap at 5 for reliability and demo pacing (avoids rate-limit cascades)
-    opponents = opponents[:5]
+    # Cap opponents for demo pacing. Concurrency is bounded by a semaphore below,
+    # so this can be larger without triggering LLM rate-limit cascades.
+    opponents = opponents[:8]
 
     if not opponents:
         session.close()
@@ -106,31 +107,38 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
     arena_id = json.loads(raw).get("arena_id") if raw else str(uuid.uuid4())
     await r.set(status_key, "running", ex=3600)
 
+    # Bound how many conversations hit the LLM at once (avoids rate-limit cascades
+    # that turned conversations into fallback cards).
+    sem = asyncio.Semaphore(4)
+    # Serialize result writes. Previously each task ran its own get/append/set on
+    # the shared key concurrently, which lost-updated cards (you'd end up with ~1).
+    # An asyncio.Lock makes the read-modify-write atomic within the event loop while
+    # still letting cards stream into /results incrementally as each one finishes.
+    results_lock = asyncio.Lock()
+    collected: list[dict] = []
+
     async def run_one(opponent: User) -> None:
-        try:
-            card = await _arena_conversation(user, opponent, mode, session)
-        except Exception as e:
-            card = _fallback_match_card(user, opponent, str(e))
+        async with sem:
+            try:
+                card = await _arena_conversation(user, opponent, mode, session)
+            except Exception as e:
+                card = _fallback_match_card(user, opponent, str(e))
         if not isinstance(card, dict):
             card = _fallback_match_card(user, opponent, "invalid response")
         if "score" not in card:
             card = {**card, "score": 40}
-        current_raw = await r.get(result_key)
-        current = json.loads(current_raw) if current_raw else {"arena_id": arena_id, "match_cards": []}
-        cards = current.get("match_cards", [])
-        cards.append(card)
-        cards.sort(key=lambda x: x.get("score", 0), reverse=True)
-        await r.set(
-            result_key,
-            json.dumps({"arena_id": current.get("arena_id", arena_id), "match_cards": cards}),
-            ex=3600,
-        )
+        async with results_lock:
+            collected.append(card)
+            collected.sort(key=lambda x: x.get("score", 0), reverse=True)
+            await r.set(
+                result_key,
+                json.dumps({"arena_id": arena_id, "match_cards": list(collected)}),
+                ex=3600,
+            )
 
     await asyncio.gather(*[run_one(opp) for opp in opponents], return_exceptions=True)
 
-    final_raw = await r.get(result_key)
-    match_cards = json.loads(final_raw).get("match_cards", []) if final_raw else []
-    await r.set(f"arena:{arena_id}:results", json.dumps(match_cards), ex=3600)
+    await r.set(f"arena:{arena_id}:results", json.dumps(collected), ex=3600)
     await r.set(status_key, "completed", ex=3600)
 
     session.close()

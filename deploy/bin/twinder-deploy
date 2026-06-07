@@ -46,7 +46,10 @@ build_web(){ # build_web [--ci]
   log "npm run build"
   ( cd "$FRONTEND" && npm run build ) >>"$LOG" 2>&1 || { log "ERROR frontend build failed (old build still serving)"; return 1; }
 }
-install_be(){ log "pip install -e ."; "$REPO/.venv/bin/pip" install -q -e "$REPO" >>"$LOG" 2>&1 || { log "WARN pip install failed"; return 1; }; }
+install_be(){ # install backend deps into the venv. Venv is uv-created (no pip), so use uv.
+  local UV; UV="$(command -v uv || echo "$HOME/.local/bin/uv")"
+  log "uv pip install -e ."
+  VIRTUAL_ENV="$REPO/.venv" "$UV" pip install -e "$REPO" >>"$LOG" 2>&1 || { log "ERROR backend dep install failed"; return 1; }; }
 
 do_run(){
   exec 9>"$LOCK"
@@ -91,8 +94,8 @@ do_run(){
   fi
 
   if [ "$pip" = 1 ]; then
-    log "backend deps changed -> pip install -e ."
-    "$REPO/.venv/bin/pip" install -q -e "$REPO" >>"$LOG" 2>&1 || log "WARN pip install failed (continuing)"
+    log "backend deps changed -> reinstalling"
+    if ! install_be; then log "ERROR backend dep install failed — NOT restarting api (old code still serving)"; restart_api=0; fi
   fi
 
   if [ "$restart_web" = 1 ]; then

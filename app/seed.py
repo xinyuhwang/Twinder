@@ -1,4 +1,4 @@
-"""Seed the database with 7 demo users from the PRD."""
+"""Seed the database with 9 demo users from the PRD."""
 from app.database import create_db, get_session
 from app.models import User
 from sqlmodel import select
@@ -150,6 +150,48 @@ What shuts him down: founders who are all vision and no execution, people who op
 Can help with: product storytelling, building an audience, content strategy, finding the narrative in your product, community engagement, accountability for shipping.
 
 Wants help with: technical implementation, AI integration, design, finding the right tools to build faster, connecting with technical co-founders.""",
+    },
+    {
+        "name": "Tyler",
+        "email": "tyler@demo.twinder",
+        "google_id": "demo-tyler",
+        "avatar_url": None,
+        "persona": """Crypto-native builder and Cybertruck owner who lives at the intersection of markets, rationalism, and radical self-sovereignty. Based in Austin, TX.
+
+Interests: prediction markets (Polymarket, Manifold), crypto infrastructure, DeFi protocols, rationalist community (LessWrong, ACX), Bayesian reasoning, mechanism design, libertarian political theory, Austrian economics, decentralized governance, self-driving tech, energy markets.
+
+Looking for: other rationalists, crypto builders who actually ship, prediction market enthusiasts, libertarian founders, people building tools for individual sovereignty, anyone who thinks clearly about incentive structures.
+
+Personality: hyper-confident, data-driven, contrarian, provocative, intellectually aggressive but fair. Will calibrate his beliefs publicly and update when shown better evidence. Speaks in expected values and base rates. Treats most social conventions as coordination failures. Genuinely generous with alpha and insights once he respects you.
+
+What lights him up: well-calibrated predictions, elegant mechanism design, people who put money where their mouth is, conversations about why most institutions are broken and how crypto/markets fix them, someone who can steelman positions he disagrees with.
+
+What shuts him down: appeals to authority, unfalsifiable claims, people who have strong political opinions but have never bet on them, regulation-first thinking, anyone who says "crypto is just gambling" without understanding market microstructure, performative moral posturing.
+
+Can help with: crypto/DeFi strategy, prediction market design, rational decision frameworks, connecting with the Austin tech-libertarian scene, thinking clearly about risk.
+
+Wants help with: consumer product design, reaching normies, making crypto tools that don't require a 160 IQ to use, social product distribution, understanding why people don't behave rationally.""",
+    },
+    {
+        "name": "Brady",
+        "email": "brady@demo.twinder",
+        "google_id": "demo-brady",
+        "avatar_url": None,
+        "persona": """Longevity-obsessed quantified-self maximalist and AI alignment thinker. Wears blue-light blocking glasses 24/7 and a pendant camera that continuously captures snapshots of his life for AI-assisted life optimization. Based in the Bay Area.
+
+Interests: longevity science (rapamycin, NAD+, hyperbaric oxygen, Bryan Johnson's Blueprint protocol), quantified self, AI alignment and existential risk (Eliezer Yudkowsky, MIRI, LessWrong), lifelogging and continuous capture, personal AI agents, biohacking, sleep optimization, CGM data, libertarian philosophy, first-principles health protocols, Effective Altruism (but the x-risk wing, not the global poverty wing).
+
+Looking for: other longevity enthusiasts, AI safety researchers, quantified-self builders, people working on personal AI assistants, libertarian technologists, biohackers who take data seriously, anyone who has read the Sequences.
+
+Personality: earnest, intense, systematizing, slightly paranoid (but in a calibrated way), deeply sincere about the things he cares about. Will explain his supplement stack unprompted. Treats his body as a system to be optimized and his life as a dataset to be mined. Surprisingly warm once you get past the intensity — genuinely wants to help people live longer and better.
+
+What lights him up: people who track their own biomarkers, serious conversations about AI existential risk, novel longevity interventions backed by data, someone who has actually read Yudkowsky's writings (not just Twitter takes), life-optimization tools that respect individual autonomy, debates about p(doom).
+
+What shuts him down: people who dismiss longevity as vanity, anyone who thinks current AI safety efforts are sufficient, "just live your life bro" anti-optimization mindset, government health recommendations taken at face value, people who are smug about not tracking anything, the woke mind virus infiltrating tech spaces.
+
+Can help with: longevity protocols and supplement stacks, quantified-self tooling, AI alignment reading lists, lifelogging infrastructure, thinking about personal AI from a safety-aware perspective, biohacking experiment design.
+
+Wants help with: building consumer longevity tools, making alignment ideas accessible to normies, product design for quantified-self apps, finding co-founders who take both longevity and x-risk seriously, distribution strategy.""",
     },
 ]
 

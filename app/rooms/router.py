@@ -105,9 +105,9 @@ async def get_messages(room_id: str, user: User = Depends(get_current_user)):
     r = get_redis()
     raw = await r.xrange(f"room:{room_id}:messages")
     messages = []
-    for msg_id, fields in raw:
+    for stream_id, fields in raw:
         messages.append(MessageRead(
-            id=msg_id,
+            id=fields.get("msg_id", stream_id),
             sender_user_id=fields["sender_user_id"],
             sender_name=fields["sender_name"],
             role=fields["role"],

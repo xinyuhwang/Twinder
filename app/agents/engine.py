@@ -1,5 +1,6 @@
 import asyncio
 import json
+import uuid
 from datetime import datetime, timezone
 
 from app.agents.profile import get_active_profile
@@ -95,7 +96,9 @@ async def run_conversation(room_id: str):
 
         # Write to Redis Stream
         now = datetime.now(timezone.utc).isoformat()
+        msg_id = str(uuid.uuid4())
         await r.xadd(f"room:{room_id}:messages", {
+            "msg_id": msg_id,
             "sender_user_id": str(current_user.id),
             "sender_name": current_user.name,
             "role": "agent",
@@ -112,6 +115,7 @@ async def run_conversation(room_id: str):
         await r.publish(f"room:{room_id}:events", json.dumps({
             "type": "message",
             "data": {
+                "msg_id": msg_id,
                 "sender_user_id": current_user.id,
                 "sender_name": current_user.name,
                 "role": "agent",
@@ -160,7 +164,9 @@ async def respond_as_agent(room_id: str, agent_user_id: int):
     content = await _generate_turn(system, conversation, room_id, agent_user_id)
 
     now = datetime.now(timezone.utc).isoformat()
+    msg_id = str(uuid.uuid4())
     await r.xadd(f"room:{room_id}:messages", {
+        "msg_id": msg_id,
         "sender_user_id": str(agent_user_id),
         "sender_name": user.name,
         "role": "agent",
@@ -173,6 +179,7 @@ async def respond_as_agent(room_id: str, agent_user_id: int):
     await r.publish(f"room:{room_id}:events", json.dumps({
         "type": "message",
         "data": {
+            "msg_id": msg_id,
             "sender_user_id": agent_user_id,
             "sender_name": user.name,
             "role": "agent",

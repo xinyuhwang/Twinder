@@ -8,6 +8,7 @@ import { ArrowLeft, Send } from 'lucide-react';
 interface WsMessage {
   type: 'message' | 'room_completed' | 'human_takeover' | 'vibe_score' | 'ping';
   data?: {
+    msg_id?: string;
     sender_user_id?: string;
     sender_name?: string;
     role?: 'agent' | 'human';
@@ -185,15 +186,19 @@ export default function RoomPage() {
       try {
         const msg: WsMessage = JSON.parse(event.data);
         if (msg.type === 'message' && msg.data) {
+          const msgId = msg.data.msg_id ?? `ws-${Date.now()}-${Math.random()}`;
           const newMsg: MessageRead = {
-            id: `ws-${Date.now()}-${Math.random()}`,
+            id: msgId,
             sender_user_id: msg.data.sender_user_id ?? '',
             sender_name: msg.data.sender_name ?? '',
             role: msg.data.role ?? 'agent',
             content: msg.data.content ?? '',
             timestamp: msg.data.timestamp ?? new Date().toISOString(),
           };
-          setMessages(prev => [...prev, newMsg]);
+          setMessages(prev => {
+            if (prev.some(m => m.id === msgId)) return prev;
+            return [...prev, newMsg];
+          });
         } else if (msg.type === 'room_completed') {
           api.getRoom(token, roomId).then(r => {
             setRoom(r);

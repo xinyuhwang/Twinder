@@ -1,5 +1,6 @@
 import asyncio
 import json
+import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -66,9 +67,11 @@ async def room_websocket(websocket: WebSocket, room_id: str):
                     continue
 
                 now = datetime.now(timezone.utc).isoformat()
+                msg_id = str(uuid.uuid4())
 
                 # Write human message to Redis Stream
                 await r.xadd(f"room:{room_id}:messages", {
+                    "msg_id": msg_id,
                     "sender_user_id": str(user_id),
                     "sender_name": user.name,
                     "role": "human",
@@ -81,6 +84,7 @@ async def room_websocket(websocket: WebSocket, room_id: str):
                 await r.publish(f"room:{room_id}:events", json.dumps({
                     "type": "message",
                     "data": {
+                        "msg_id": msg_id,
                         "sender_user_id": user_id,
                         "sender_name": user.name,
                         "role": "human",

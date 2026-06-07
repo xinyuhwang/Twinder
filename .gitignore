@@ -260,3 +260,6 @@ __marimo__/
 *.db
 .agent-shell/
 weavehacks.org
+.ai-git
+.claude
+.pluto

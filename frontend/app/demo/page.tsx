@@ -28,7 +28,7 @@ export default function Demo() {
       localStore.setUserId(user.id);
       localStore.setUserName(user.name);
       localStore.setPersonaId(selectedId);
-      router.push('/arena');
+      router.push('/onboarding');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Is the backend running?');
       setJoining(false);

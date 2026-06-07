@@ -318,13 +318,13 @@ export default function RoomPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {showResults && room && (
-        <VibeResults room={room} commonInterests={commonInterests} onBack={() => router.push('/demo')} />
+        <VibeResults room={room} commonInterests={commonInterests} onBack={() => router.push('/live')} />
       )}
 
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[#0a0a0f]/90 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-zinc-800/50">
         <button
-          onClick={() => router.push('/demo')}
+          onClick={() => router.push('/live')}
           className="text-zinc-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

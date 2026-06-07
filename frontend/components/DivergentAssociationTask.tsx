@@ -13,11 +13,13 @@ function isValid(w: string): boolean {
 interface DivergentAssociationTaskProps {
   initialValue?: string;
   onComplete: (words: string[]) => void;
+  onSkip: () => void;
 }
 
 export function DivergentAssociationTask({
   initialValue,
   onComplete,
+  onSkip,
 }: DivergentAssociationTaskProps) {
   const [words, setWords] = useState<string[]>(() => {
     if (!initialValue) return [];
@@ -32,31 +34,42 @@ export function DivergentAssociationTask({
 
   const count = words.length;
   const done = count >= TOTAL;
+  const inputEmpty = !input.trim();
+
+  // Arrow adds a word when the input has text, or advances when input is empty + words exist.
+  const canAdvance = !done && count > 0 && inputEmpty;
+  const canAddWord = !done && !inputEmpty && isValid(input.trim());
+  const arrowEnabled = canAdvance || canAddWord;
 
   useEffect(() => {
     if (!done) inputRef.current?.focus();
   }, [count, done]);
 
-  function submit() {
-    const word = input.trim().toLowerCase();
-    if (!word || !isValid(word)) return;
-    const seen = new Set(words.map(w => w.toLowerCase()));
-    if (seen.has(word)) {
+  function handleArrow() {
+    if (done) return;
+    if (!inputEmpty) {
+      // Add the word if valid.
+      const word = input.trim().toLowerCase();
+      if (!isValid(word)) return;
+      const seen = new Set(words.map(w => w.toLowerCase()));
+      if (seen.has(word)) {
+        setInput('');
+        return;
+      }
+      const next = [...words, word];
+      setWords(next);
       setInput('');
-      return;
-    }
-    const next = [...words, word];
-    setWords(next);
-    setInput('');
-    if (next.length >= TOTAL) {
-      onComplete(next);
+      if (next.length >= TOTAL) onComplete(next);
+    } else if (count > 0) {
+      // Empty input, words exist — advance.
+      onComplete(words);
     }
   }
 
   function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
       e.preventDefault();
-      submit();
+      handleArrow();
     }
   }
 
@@ -65,7 +78,9 @@ export function DivergentAssociationTask({
   return (
     <div className="flex flex-col gap-6 flex-1">
       <div className="space-y-1">
-        <h2 className="text-xl font-semibold text-white leading-snug">{prompt}</h2>
+        <h2 className="text-xl font-semibold text-white leading-snug">
+          {done ? 'Got all 10.' : prompt}
+        </h2>
         {count > 0 && (
           <p className="text-sm text-zinc-500 tabular-nums">
             {count} of {TOTAL}
@@ -73,27 +88,28 @@ export function DivergentAssociationTask({
         )}
       </div>
 
-      <div className="flex gap-2 items-center">
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKey}
-          placeholder="word"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          disabled={done}
-          className="flex-1 px-4 py-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition-colors text-base"
-        />
-        <button
-          onClick={submit}
-          disabled={done || !input.trim()}
-          className="px-5 py-3.5 rounded-2xl bg-violet-600 text-white font-semibold hover:bg-violet-500 disabled:opacity-40 transition-colors flex-shrink-0"
-        >
-          <ArrowRight className="w-5 h-5" />
-        </button>
-      </div>
+      {!done && (
+        <div className="flex gap-2 items-center">
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder="word"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className="flex-1 px-4 py-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition-colors text-base"
+          />
+          <button
+            onClick={handleArrow}
+            disabled={!arrowEnabled}
+            className="px-5 py-3.5 rounded-2xl bg-violet-600 text-white font-semibold hover:bg-violet-500 disabled:opacity-40 transition-colors flex-shrink-0"
+          >
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       {count > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -107,6 +123,24 @@ export function DivergentAssociationTask({
           ))}
         </div>
       )}
+
+      <div className="mt-auto space-y-2">
+        {done && (
+          <button
+            onClick={() => onComplete(words)}
+            className="w-full py-4 rounded-2xl bg-violet-600 text-white font-semibold hover:bg-violet-500 transition-colors flex items-center justify-center gap-2"
+          >
+            Next
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        )}
+        <button
+          onClick={onSkip}
+          className="w-full text-sm text-zinc-600 hover:text-zinc-400 transition-colors py-2"
+        >
+          Skip
+        </button>
+      </div>
     </div>
   );
 }

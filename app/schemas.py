@@ -10,6 +10,7 @@ class UserRead(BaseModel):
     email: str
     avatar_url: Optional[str] = None
     persona: Optional[str] = None
+    dat_score: Optional[float] = None
 
 
 class UserUpdate(BaseModel):
@@ -22,6 +23,7 @@ class RoomRead(BaseModel):
     status: str
     vibe_score: Optional[float] = None
     vibe_summary: Optional[str] = None
+    match_card: Optional[dict] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
     participants: list[UserRead] = []
@@ -59,6 +61,8 @@ class MatchCard(BaseModel):
     follow_up_questions: list[str] = []
     conversation_highlights: list[ConversationHighlight] = []
     common_interests: list[str] = []
+    openness_compatibility: Optional[float] = None
+    openness_scores: Optional[dict] = None
     opponent_id: int
     opponent_name: str
     opponent_avatar: Optional[str] = None
@@ -70,10 +74,28 @@ class IntakeRequest(BaseModel):
     answers: dict | None = None
 
 
+class DatRequest(BaseModel):
+    words: list[str]
+
+
+class DatResult(BaseModel):
+    score: Optional[float] = None
+    scored_words: list[str] = []
+    valid_words: list[str] = []
+    invalid_words: list[str] = []
+    enough_words: bool = False
+
+
 class TwinPreview(BaseModel):
     public_safe_summary: Optional[str] = None
     looking_for: list[str] = []
     interests: list[str] = []
+
+
+class FeedbackIn(BaseModel):
+    verdict: str            # save | pass | meet
+    rating: Optional[int] = None
+    note: Optional[str] = None
 
 
 class ArenaResponse(BaseModel):

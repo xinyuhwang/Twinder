@@ -68,33 +68,14 @@ export function RequiredQuestionFlow({
   const totalSteps = allQuestions.length;
   const progress = ((step + 1) / totalSteps) * 100;
 
-  function saveAndAdvance(value: string) {
-    const nextAnswers = { ...answers, [current.id]: value };
-    setAnswers(nextAnswers);
-
-    if (step >= totalSteps - 1) {
-      onComplete(nextAnswers);
-      return;
-    }
-
-    const nextStep = step + 1;
-    setStep(nextStep);
-    setInput(nextAnswers[allQuestions[nextStep].id] ?? '');
-  }
-
   function handleContinue() {
     const trimmed = input.trim();
     if (!trimmed && !(isFollowUp && canSkipFollowUp)) return;
-    saveAndAdvance(trimmed);
+    advance({ ...answers, [current.id]: trimmed });
   }
 
-  function handleDatComplete(words: string[]) {
-    const nextAnswers: Record<string, string> = {
-      ...answers,
-      [current.id]: words.join(', '),
-    };
+  function advance(nextAnswers: Record<string, string>) {
     setAnswers(nextAnswers);
-
     if (step >= totalSteps - 1) {
       onComplete(nextAnswers);
       return;
@@ -102,17 +83,19 @@ export function RequiredQuestionFlow({
     const nextStep = step + 1;
     setStep(nextStep);
     setInput(nextAnswers[allQuestions[nextStep].id] ?? '');
+  }
+
+  function handleDatComplete(words: string[]) {
+    advance({ ...answers, [current.id]: words.join(', ') });
+  }
+
+  function handleDatSkip() {
+    advance({ ...answers });
   }
 
   function handleSkipFollowUp() {
     if (!isFollowUp || !canSkipFollowUp) return;
-    if (step >= totalSteps - 1) {
-      onComplete(answers);
-      return;
-    }
-    const nextStep = step + 1;
-    setStep(nextStep);
-    setInput(answers[allQuestions[nextStep].id] ?? '');
+    advance({ ...answers });
   }
 
   return (
@@ -138,6 +121,7 @@ export function RequiredQuestionFlow({
           key={current.id}
           initialValue={answers[current.id]}
           onComplete={handleDatComplete}
+          onSkip={handleDatSkip}
         />
       ) : (
         <>

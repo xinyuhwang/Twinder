@@ -9,8 +9,26 @@ from app.auth.oauth import oauth
 from app.config import settings
 from app.database import get_session
 from app.deps import get_current_user
-from app.models import User
+from app.models import Event, EventParticipant, User
 from app.schemas import UserRead
+
+DEFAULT_EVENT_CODE = "HACK-AI-2026"
+
+
+def _enroll_in_default_event(user: User, session: Session) -> None:
+    """Enroll a user in the default event if not already enrolled."""
+    default_event = session.exec(select(Event).where(Event.code == DEFAULT_EVENT_CODE)).first()
+    if not default_event:
+        return
+    already = session.exec(
+        select(EventParticipant).where(
+            EventParticipant.event_id == default_event.id,
+            EventParticipant.user_id == user.id,
+        )
+    ).first()
+    if not already:
+        session.add(EventParticipant(event_id=default_event.id, user_id=user.id))
+        session.commit()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -48,6 +66,7 @@ async def google_callback(request: Request, session: Session = Depends(get_sessi
         session.commit()
         session.refresh(user)
 
+    _enroll_in_default_event(user, session)
     access_token = create_token(user)
 
     # Redirect to frontend with token
@@ -93,6 +112,7 @@ async def dev_login(
         session.commit()
         session.refresh(user)
 
+    _enroll_in_default_event(user, session)
     token = create_token(user)
     response.set_cookie(key="access_token", value=token, httponly=True, max_age=7 * 24 * 3600)
     return {"token": token, "user": UserRead.model_validate(user, from_attributes=True)}

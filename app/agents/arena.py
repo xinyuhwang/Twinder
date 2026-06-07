@@ -6,10 +6,11 @@ from datetime import datetime, timezone
 
 from sqlmodel import select
 
+from app.agents.dat import openness_compatibility, openness_line
 from app.agents.prompts import MATCH_CARD_SCORING_PROMPT, MODE_GUIDELINES, TWIN_OPENER, TWIN_SYSTEM_PROMPT
 from app.database import get_session
 from app.llm import chat
-from app.models import User
+from app.models import EventParticipant, User
 from app.redis_client import get_redis
 
 ARENA_TURNS = 8  # 4 exchanges each
@@ -23,7 +24,25 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
         session.close()
         return []
 
-    opponents = session.exec(select(User).where(User.id != user_id)).all()
+    # Scope opponents to users in the same event (most recently joined event wins).
+    # Falls back to all users if the requesting user has no event enrollment.
+    participant_row = session.exec(
+        select(EventParticipant)
+        .where(EventParticipant.user_id == user_id)
+        .order_by(EventParticipant.joined_at.desc())
+    ).first()
+
+    if participant_row:
+        peer_ids = session.exec(
+            select(EventParticipant.user_id).where(
+                EventParticipant.event_id == participant_row.event_id,
+                EventParticipant.user_id != user_id,
+            )
+        ).all()
+        opponents = session.exec(select(User).where(User.id.in_(peer_ids))).all()
+    else:
+        opponents = session.exec(select(User).where(User.id != user_id)).all()
+
     if not opponents:
         session.close()
         return []
@@ -63,6 +82,15 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
     """Run a short conversation between two agents and score it."""
     persona_a = user_a.persona or f"{user_a.name} — no detailed profile provided yet."
     persona_b = user_b.persona or f"{user_b.name} — no detailed profile provided yet."
+
+    # Fold the divergent-thinking / openness signal into the persona text so
+    # both the agents and the scorer can reason about it.
+    line_a = openness_line(user_a.dat_score)
+    line_b = openness_line(user_b.dat_score)
+    if line_a:
+        persona_a = f"{persona_a}\n\n{line_a}"
+    if line_b:
+        persona_b = f"{persona_b}\n\n{line_b}"
 
     mode_guidelines = MODE_GUIDELINES.get(mode, MODE_GUIDELINES["networking"])
     system_a = TWIN_SYSTEM_PROMPT.format(name=user_a.name, persona=persona_a, mode_guidelines=mode_guidelines)
@@ -138,6 +166,20 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
             "match_type": "unexpected_connection",
             "summary": f"Unable to fully evaluate: {e}",
             "common_interests": [],
+        }
+
+    # Blend in openness compatibility (similarity of divergent-thinking scores).
+    # People with closer DAT scores are treated as more compatible on openness
+    # to experience, which research links to relationship/collaboration fit.
+    compat = openness_compatibility(user_a.dat_score, user_b.dat_score)
+    if compat is not None:
+        base_score = float(match_card.get("score", 50))
+        blended = round(0.8 * base_score + 0.2 * compat)
+        match_card["score"] = max(0, min(100, blended))
+        match_card["openness_compatibility"] = compat
+        match_card["openness_scores"] = {
+            user_a.name: user_a.dat_score,
+            user_b.name: user_b.dat_score,
         }
 
     # Add metadata

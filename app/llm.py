@@ -1,4 +1,4 @@
-from litellm import acompletion
+from litellm import acompletion, aembedding
 
 from app.config import settings
 from app.observability import op
@@ -28,3 +28,18 @@ async def chat(
 
     response = await acompletion(**kwargs)
     return response.choices[0].message.content
+
+
+@op(name="llm.embed")
+async def embed(
+    texts: list[str],
+    model: str = "text-embedding-3-small",
+) -> list[list[float]]:
+    """Return embedding vectors for a list of texts via litellm (OpenAI by default)."""
+    response = await aembedding(
+        model=model,
+        input=texts,
+        api_key=settings.openai_api_key or None,
+    )
+    # litellm returns response.data as a list of dicts with an "embedding" key
+    return [item["embedding"] for item in response.data]

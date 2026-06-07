@@ -22,14 +22,35 @@ Keep interpretations loose, grounded, and confidence-labeled. Do not treat symbo
 
 ## Core synthesis principle
 
-Integration data shows durable patterns. Onboarding answers show current self-representation and intent. Use both.
+Integration data and uploaded context show durable patterns. Onboarding answers show how the user wants to show up RIGHT NOW at this specific event. Use both, and let them interact.
 
 When they conflict:
 1. Prefer explicit user corrections.
-2. Prefer onboarding answers for current intent.
+2. Prefer onboarding answers for current intent and desired tone.
 3. Prefer repeated patterns for durable traits.
 4. Preserve contradictions as useful compatibility intelligence.
 5. Do not expose private evidence behind sensitive inferences.
+
+## Onboarding answers: tone-flavoring rules
+
+You will be given the user's raw onboarding answers as a labeled block alongside the intake profile YAML. These answers carry strong signal about tone, register, and the energy the user wants to project at this event:
+
+- `animal` and `color`: symbolic / playful / revealing. Do NOT restate the literal animal or color in public-facing fields. Instead, use the choice and the reasoning behind it to flavor `vibe_model`, `communication_style`, `conversation_hooks`, and `playfulness_level`. A thought-out, wry, or silly answer here is a direct signal about personality register.
+- `event_goals`: the user's current intent and positioning. Weight this heavily for `current_intent`, `profile_positioning`, and `what_people_should_understand`.
+- `hope_to_find`: flavors `looking_for` and the energies the user is drawn to.
+- `can_help_15min`: flavors `skills_and_strengths.can_help_with` and `help_exchange`.
+- `never_share`: maps directly to `privacy.sensitive_do_not_share`.
+
+## Tone contrast detection
+
+Read the tone of the uploaded context / intake YAML (often formal: resume, LinkedIn, project list) against the tone of the onboarding answers (often playful, candid, or silly). When there is a contrast:
+
+- Treat the playful register of the answers as intentional. The user chose to answer the event questions this way. That is a signal about how they want their twin to come across in conversations, even if their background is serious.
+- Blend both: the substance and credibility from the intake YAML, the warmth, playfulness, and approachability from the onboarding answers.
+- Let the answer tone lift `vibe_model.playfulness_level`, `communication_style.formality`, `likely_twin_voice`, and `vibe_model.one_sentence_vibe` toward the warmer/more human register.
+- Do NOT flatten the playfulness into neutral corporate language. If someone answered the animal question with wit, their twin should carry that wit.
+
+Do not quote answers verbatim in any public-facing profile field. Abstract and extrapolate.
 
 ## Privacy rules
 
@@ -261,10 +282,36 @@ twinder_matching_vector:
 Synthesize all available inputs into both outputs. Optimize for useful compatibility matching. Read between the lines around humor, seriousness, self-perception, and ideal companion energy. Be specific, privacy-aware, grounded, and useful. Return valid YAML only."""
 
 
+_ANSWER_LABELS: dict[str, str] = {
+    "animal": "symbolic/vibe (use to flavor playfulness, emotional texture, conversation hooks — do not restate literally)",
+    "color": "symbolic/vibe (use to flavor emotional texture, warmth register — do not restate literally)",
+    "event_goals": "current intent and positioning for this event",
+    "hope_to_find": "who they want to meet and the energies they are drawn to",
+    "can_help_15min": "concrete help they can offer — flavors skills and help_exchange",
+    "never_share": "privacy boundary — maps to sensitive_do_not_share",
+}
+
+
+def _format_answers_block(answers: dict) -> str:
+    lines = ["Onboarding answers (use to flavor tone, voice, and interpretation):"]
+    for key, value in answers.items():
+        if not value or not value.strip():
+            continue
+        label = _ANSWER_LABELS.get(key, "additional context")
+        lines.append(f"  [{label}]\n  Answer: {value.strip()}")
+    return "\n\n".join(lines)
+
+
 @op(name="synthesize_profile")
-async def synthesize_profile(profile_yaml: str, integrations: dict | None = None) -> dict:
+async def synthesize_profile(
+    profile_yaml: str,
+    integrations: dict | None = None,
+    onboarding_answers: dict | None = None,
+) -> dict:
     """Run synthesis → return {'profile': dict, 'matching_vector': dict}."""
-    parts = [f"User profile YAML:\n{profile_yaml}"]
+    parts = [f"User profile YAML (intake output):\n{profile_yaml}"]
+    if onboarding_answers:
+        parts.append(_format_answers_block(onboarding_answers))
     if integrations:
         parts.append("Additional integrations:\n" + "\n".join(
             f"### {k}\n{v}" for k, v in integrations.items()

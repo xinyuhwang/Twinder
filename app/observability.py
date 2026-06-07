@@ -15,6 +15,7 @@ def init_weave() -> None:
     )
     weave.init(project)
     _initialized = True
+    _publish_all_prompts()
 
 
 def op(*dargs, **dkwargs):
@@ -43,3 +44,51 @@ def op(*dargs, **dkwargs):
         dargs = ()
         return wrap(bare_fn)
     return wrap
+
+
+def _publish_all_prompts() -> None:
+    """Publish all known prompts as versioned Weave objects. Called once during init."""
+    try:
+        from app.agents.prompts import MATCH_CARD_SCORING_PROMPT, TWIN_SYSTEM_PROMPT, VIBE_SCORING_PROMPT
+        from app.agents.profile import INTAKE_PROMPT
+        from app.agents.synthesis import SYNTHESIS_PROMPT
+        publish_prompt("intake_prompt", INTAKE_PROMPT)
+        publish_prompt("synthesis_prompt", SYNTHESIS_PROMPT)
+        publish_prompt("match_card_scoring_prompt", MATCH_CARD_SCORING_PROMPT)
+        publish_prompt("twin_system_prompt", TWIN_SYSTEM_PROMPT)
+        publish_prompt("vibe_scoring_prompt", VIBE_SCORING_PROMPT)
+    except Exception:
+        pass
+
+
+def publish_prompt(name: str, text: str) -> None:
+    """Publish a prompt as a versioned Weave object. No-op when disabled."""
+    if not settings.weave_enabled:
+        return
+    try:
+        import weave
+        weave.publish(weave.StringPrompt(text), name=name)
+    except Exception:
+        pass
+
+
+def add_call_feedback(call_id: str | None, verdict: str, rating: int | None = None, note: str | None = None) -> None:
+    """Attach human feedback to a Weave trace. No-op when disabled or call_id is None."""
+    if not settings.weave_enabled or not call_id:
+        return
+    try:
+        import weave
+        client = weave.get_client()
+        if client is None:
+            return
+        call = client.get_call(call_id)
+        if call is None:
+            return
+        reaction = "👍" if verdict == "save" else "👎"
+        call.feedback.add_reaction(reaction)
+        if rating is not None:
+            call.feedback.add("rating", {"value": rating})
+        if note:
+            call.feedback.add_note(note)
+    except Exception:
+        pass

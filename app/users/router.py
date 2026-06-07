@@ -3,6 +3,7 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
+from app.agents.dat import score_dat
 from app.agents.profile import (
     _derive_persona,
     _to_twin_preview,
@@ -13,7 +14,7 @@ from app.agents.synthesis import build_system_instruction, synthesize_profile
 from app.database import get_session
 from app.deps import get_current_user
 from app.models import User
-from app.schemas import IntakeRequest, TwinPreview, UserRead, UserUpdate
+from app.schemas import DatRequest, DatResult, IntakeRequest, TwinPreview, UserRead, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -46,7 +47,7 @@ async def run_intake(
     session: Session = Depends(get_session),
 ):
     yaml_str = await generate_profile(body.raw_context, body.answers)
-    synthesis = await synthesize_profile(yaml_str)
+    synthesis = await synthesize_profile(yaml_str, onboarding_answers=body.answers)
     system_instruction = build_system_instruction(synthesis, user.name)
 
     new_profile_version(
@@ -60,6 +61,31 @@ async def run_intake(
     session.add(user)
     session.commit()
     return TwinPreview(**_to_twin_preview(yaml_str))
+
+
+@router.post("/me/dat", response_model=DatResult)
+async def submit_dat(
+    body: DatRequest,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Score the user's Divergent Association Task and persist it on the profile.
+
+    The resulting score is a proxy for openness to experience / divergent
+    thinking and is used by the matching algorithm (see app/agents/arena.py).
+    """
+    try:
+        result = await score_dat(body.words)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Could not score words: {e}")
+
+    if result.get("score") is not None:
+        user.dat_score = result["score"]
+        user.dat_words = json.dumps(result["scored_words"])
+        session.add(user)
+        session.commit()
+
+    return DatResult(**result)
 
 
 @router.get("/{user_id}", response_model=UserRead)

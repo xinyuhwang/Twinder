@@ -7,13 +7,13 @@ import { localStore } from '@/lib/local-store';
 
 export default function OnboardingQuestions() {
   const router = useRouter();
-  const [ready] = useState(
-    () => typeof window !== 'undefined' && Boolean(localStore.getToken()),
-  );
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!localStore.getToken()) {
       router.replace('/demo');
+    } else {
+      setReady(true);
     }
   }, [router]);
 

@@ -88,12 +88,11 @@ export function RequiredQuestionFlow({
     saveAndAdvance(trimmed);
   }
 
-  function handleDatComplete(words: string[], score: number | null) {
+  function handleDatComplete(words: string[]) {
     const nextAnswers: Record<string, string> = {
       ...answers,
       [current.id]: words.join(', '),
     };
-    if (score !== null) nextAnswers.dat_score = String(Math.round(score));
     setAnswers(nextAnswers);
 
     if (step >= totalSteps - 1) {
@@ -137,7 +136,6 @@ export function RequiredQuestionFlow({
       {current.kind === 'dat' ? (
         <DivergentAssociationTask
           key={current.id}
-          prompt={current.text}
           initialValue={answers[current.id]}
           onComplete={handleDatComplete}
         />

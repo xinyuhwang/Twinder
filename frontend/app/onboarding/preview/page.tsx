@@ -13,6 +13,19 @@ import {
 } from '@/lib/preview';
 import type { TwinPreview } from '@/types';
 
+async function submitDatInBackground(token: string, datWordsCsv: string) {
+  const words = datWordsCsv
+    .split(',')
+    .map(w => w.trim())
+    .filter(Boolean);
+  if (words.length < 2) return;
+  try {
+    await api.dat(token, words);
+  } catch {
+    // Silent -- scoring is a best-effort signal, not blocking.
+  }
+}
+
 export default function OnboardingPreview() {
   const router = useRouter();
   const [preview, setPreview] = useState<AgentPreviewDisplay | null>(null);
@@ -32,6 +45,11 @@ export default function OnboardingPreview() {
     const hasInput = Boolean(rawContext) || Boolean(hasAnswers);
     const persona = DEMO_PERSONAS.find(p => p.id === localStore.getPersonaId()) ?? DEMO_PERSONAS[0];
     const userName = localStore.getUserName();
+
+    // Fire DAT scoring in the background as soon as we have words.
+    if (token && answers?.dat) {
+      submitDatInBackground(token, answers.dat);
+    }
 
     async function load() {
       try {

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { localStore } from '@/lib/local-store';
 import { api } from '@/lib/api';
-import { DEMO_PERSONAS } from '@/lib/personas';
+import { DEMO_PERSONAS, arenaRoster } from '@/lib/personas';
 import { Zap } from 'lucide-react';
 
 function AvatarDot({
@@ -44,7 +44,7 @@ export default function Arena() {
   const token = localStore.getToken();
   const personaId = localStore.getPersonaId();
   const currentPersona = DEMO_PERSONAS.find(p => p.id === personaId) ?? DEMO_PERSONAS[0];
-  const otherPersonas = DEMO_PERSONAS.filter(p => p.id !== personaId).slice(0, 5);
+  const otherPersonas = arenaRoster().filter(p => p.id !== personaId);
 
   useEffect(() => {
     if (!token) {

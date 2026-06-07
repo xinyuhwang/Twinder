@@ -64,4 +64,34 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     avatarColor: 'bg-orange-500',
     avatarInitials: 'MC',
   },
+  {
+    id: 'tyler',
+    name: 'Tyler',
+    role: 'Crypto-native builder, rationalist',
+    persona: 'Crypto-native builder and rationalist in Austin. Prediction markets, DeFi, mechanism design, radical self-sovereignty. Looking for builders who ship and people who bet on their beliefs.',
+    avatarColor: 'bg-cyan-500',
+    avatarInitials: 'TY',
+  },
+  {
+    id: 'brady',
+    name: 'Brady',
+    role: 'Longevity biohacker, AI alignment',
+    persona: 'Longevity-obsessed quantified-self maximalist in the Bay Area. Biohacking, lifelogging, AI alignment and x-risk. Looking for biohackers and AI-safety folks who take data seriously.',
+    avatarColor: 'bg-teal-500',
+    avatarInitials: 'BR',
+  },
 ];
+
+// Demo roster — the concrete, ordered list of personas shown as "others in the room"
+// during the arena. Edit this to control exactly who appears (each id must exist in
+// DEMO_PERSONAS above). This replaces the old `.slice(0, 5)` so the roster is explicit.
+export const ARENA_PERSONA_IDS: string[] = [
+  'alexis', 'haley', 'leo', 'maya', 'jordan', 'priya', 'marcus', 'tyler', 'brady',
+];
+
+export const personaById = (id: string): DemoPersona | undefined =>
+  DEMO_PERSONAS.find(p => p.id === id);
+
+// The roster resolved to persona objects (unknown ids are skipped).
+export const arenaRoster = (): DemoPersona[] =>
+  ARENA_PERSONA_IDS.map(personaById).filter((p): p is DemoPersona => Boolean(p));

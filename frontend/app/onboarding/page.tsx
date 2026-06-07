@@ -8,11 +8,14 @@ import {
   Shield,
   Link2,
   ArrowRight,
+  ArrowLeft,
   Download,
   Upload,
   CheckCircle,
   ChevronDown,
   ChevronUp,
+  FileUp,
+  MessageSquare,
 } from 'lucide-react';
 
 const STEPS = [
@@ -23,36 +26,69 @@ const STEPS = [
   'Upload the file or paste the YAML here',
 ];
 
+type OnboardingPath = 'choose' | 'import';
+
+function buildRawContext(links: string, paste: string, fileNote: string | null): string {
+  const parts: string[] = [];
+  const trimmedLinks = links.trim();
+  if (trimmedLinks) {
+    parts.push(`Links:\n${trimmedLinks}`);
+  }
+  if (paste.trim()) {
+    parts.push(paste.trim());
+  }
+  if (fileNote) {
+    parts.push(fileNote);
+  }
+  return parts.join('\n\n');
+}
+
 export default function OnboardingIntake() {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [context, setContext] = useState(() =>
-    typeof window !== 'undefined' ? (localStore.getRawContext() ?? '') : '',
-  );
+  const [path, setPath] = useState<OnboardingPath>('choose');
+  const [links, setLinks] = useState('');
+  const [paste, setPaste] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [fileNote, setFileNote] = useState<string | null>(null);
   const [promptExpanded, setPromptExpanded] = useState(true);
   const [dragOver, setDragOver] = useState(false);
-
-  const [ready] = useState(
-    () => typeof window !== 'undefined' && Boolean(localStore.getToken()),
-  );
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (!localStore.getToken()) {
       router.replace('/demo');
+      return;
     }
+    setPaste(localStore.getRawContext() ?? '');
+    setMounted(true);
   }, [router]);
 
-  if (!ready) return null;
+  if (!mounted) {
+    return (
+      <MobileShell>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+        </div>
+      </MobileShell>
+    );
+  }
 
   function loadFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const text = e.target?.result as string;
-      setContext(text);
+    const isText = /\.(yaml|yml|md|txt)$/i.test(file.name);
+    if (isText) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const text = e.target?.result as string;
+        setPaste(text);
+        setUploadedFileName(file.name);
+        setFileNote(null);
+      };
+      reader.readAsText(file);
+    } else {
       setUploadedFileName(file.name);
-    };
-    reader.readAsText(file);
+      setFileNote(`[Uploaded file: ${file.name}]`);
+    }
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -67,176 +103,232 @@ export default function OnboardingIntake() {
     if (file) loadFile(file);
   }
 
-  function proceedToQuestions(withContext: boolean) {
-    if (withContext) {
-      localStore.setRawContext(context.trim());
-      localStore.setSkippedIntake(false);
-    } else {
-      localStore.clearRawContext();
-      localStore.setSkippedIntake(true);
-    }
+  function chooseQuestions() {
+    localStore.clearRawContext();
+    localStore.setSkippedIntake(true);
     router.push('/onboarding/questions');
   }
 
-  const hasContent = context.trim().length > 0;
+  function proceedWithImport() {
+    const raw = buildRawContext(links, paste, fileNote);
+    localStore.setRawContext(raw);
+    localStore.setSkippedIntake(false);
+    router.push('/onboarding/questions');
+  }
+
+  const hasContent = Boolean(
+    links.trim() || paste.trim() || uploadedFileName || fileNote,
+  );
+
+  if (path === 'choose') {
+    return (
+      <MobileShell>
+        <div className="flex min-h-screen flex-col gap-6 px-6 py-10">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-white">Build your twin</h1>
+            <p className="text-sm text-zinc-500">
+              Choose how you want to give your agent context. Both paths end with a quick preview before the arena.
+            </p>
+          </div>
+
+          <div className="flex flex-1 flex-col gap-3">
+            <button
+              onClick={() => setPath('import')}
+              className="flex w-full items-start gap-4 rounded-2xl border border-violet-500/40 bg-violet-500/10 p-5 text-left transition-colors hover:border-violet-500/60"
+            >
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-violet-500/20">
+                <FileUp className="h-5 w-5 text-violet-300" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-white">Import data</span>
+                  <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-xs text-violet-300">
+                    Recommended
+                  </span>
+                </div>
+                <p className="text-sm text-zinc-400">
+                  Drop your resume, YAML, or files. Paste links to your site, LinkedIn, or GitHub.
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={chooseQuestions}
+              className="flex w-full items-start gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-5 text-left transition-colors hover:border-zinc-700"
+            >
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-800">
+                <MessageSquare className="h-5 w-5 text-zinc-400" />
+              </div>
+              <div className="space-y-1">
+                <span className="font-semibold text-white">Answer questions</span>
+                <p className="text-sm text-zinc-400">
+                  A few quick prompts in the app instead of importing files.
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </MobileShell>
+    );
+  }
 
   return (
     <MobileShell>
-      <div className="flex flex-col min-h-screen px-6 py-10 gap-6">
+      <div className="flex min-h-screen flex-col gap-6 px-6 py-10">
+        <button
+          onClick={() => setPath('choose')}
+          className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to options
+        </button>
+
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-white">Build your twin</h1>
-          <p className="text-zinc-500 text-sm">
-            Give your agent something to work with. It builds a hidden profile — your raw text is never shown to matches.
+          <h1 className="text-2xl font-bold text-white">Import your data</h1>
+          <p className="text-sm text-zinc-500">
+            Drop a resume, YAML, or any file. Paste links to your site, LinkedIn, or GitHub. No scraping — we pass URLs as context.
           </p>
         </div>
 
-        {/* Prompt-driven path */}
-        <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+        {/* Prompt accordion */}
+        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
           <button
             onClick={() => setPromptExpanded(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3.5 text-left"
+            className="flex w-full items-center justify-between px-4 py-3.5 text-left"
           >
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-xs font-bold text-violet-300">1</span>
-              </div>
-              <span className="text-sm font-semibold text-white">
-                Use the Twinder prompt
-                <span className="ml-2 text-xs font-normal text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-full">
-                  Recommended
-                </span>
-              </span>
-            </div>
+            <span className="text-sm font-semibold text-white">Use the Twinder prompt</span>
             {promptExpanded
-              ? <ChevronUp className="w-4 h-4 text-zinc-500 flex-shrink-0" />
-              : <ChevronDown className="w-4 h-4 text-zinc-500 flex-shrink-0" />}
+              ? <ChevronUp className="h-4 w-4 flex-shrink-0 text-zinc-500" />
+              : <ChevronDown className="h-4 w-4 flex-shrink-0 text-zinc-500" />}
           </button>
 
           {promptExpanded && (
-            <div className="px-4 pb-4 space-y-4 border-t border-zinc-800">
-              <ol className="pt-3 space-y-2">
+            <div className="space-y-4 border-t border-zinc-800 px-4 pb-4">
+              <ol className="space-y-2 pt-3">
                 {STEPS.map((step, i) => (
                   <li key={i} className="flex items-start gap-3 text-sm text-zinc-400">
-                    <span className="w-5 h-5 rounded-full bg-zinc-800 text-zinc-500 text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs text-zinc-500">
                       {i + 1}
                     </span>
                     {step}
                   </li>
                 ))}
               </ol>
-
               <a
                 href="/twinder-intake-prompt.md"
                 download="twinder-intake-prompt.md"
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
               >
-                <Download className="w-4 h-4" />
+                <Download className="h-4 w-4" />
                 Download prompt
               </a>
-
-              {/* File upload dropzone */}
-              <div
-                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-                onClick={() => fileRef.current?.click()}
-                className={`relative flex flex-col items-center justify-center gap-2 py-6 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${
-                  dragOver
-                    ? 'border-violet-500 bg-violet-500/10'
-                    : uploadedFileName
-                    ? 'border-emerald-500/50 bg-emerald-500/5'
-                    : 'border-zinc-700 bg-zinc-950/50 hover:border-zinc-600'
-                }`}
-              >
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".yaml,.yml,.md,.txt"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                {uploadedFileName ? (
-                  <>
-                    <CheckCircle className="w-6 h-6 text-emerald-400" />
-                    <p className="text-sm font-medium text-emerald-300">{uploadedFileName}</p>
-                    <p className="text-xs text-zinc-500">Tap to replace</p>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-6 h-6 text-zinc-500" />
-                    <p className="text-sm text-zinc-400">Upload YAML file</p>
-                    <p className="text-xs text-zinc-600">.yaml .yml .md .txt</p>
-                  </>
-                )}
-              </div>
             </div>
           )}
         </div>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3 text-zinc-600 text-xs">
-          <div className="flex-1 h-px bg-zinc-800" />
-          or paste directly
-          <div className="flex-1 h-px bg-zinc-800" />
+        {/* Dropzone */}
+        <div
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => fileRef.current?.click()}
+          className={`relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-8 transition-all ${
+            dragOver
+              ? 'border-violet-500 bg-violet-500/10'
+              : uploadedFileName
+                ? 'border-emerald-500/50 bg-emerald-500/5'
+                : 'border-zinc-700 bg-zinc-950/50 hover:border-zinc-600'
+          }`}
+        >
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".yaml,.yml,.md,.txt,.pdf,.docx"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          {uploadedFileName ? (
+            <>
+              <CheckCircle className="h-7 w-7 text-emerald-400" />
+              <p className="text-sm font-medium text-emerald-300">{uploadedFileName}</p>
+              <p className="text-xs text-zinc-500">Tap to replace</p>
+            </>
+          ) : (
+            <>
+              <Upload className="h-7 w-7 text-zinc-500" />
+              <p className="text-sm text-zinc-400">Drop resume, YAML, or any file</p>
+              <p className="text-xs text-zinc-600">.yaml .yml .md .txt .pdf .docx</p>
+            </>
+          )}
         </div>
 
-        {/* Direct paste path */}
-        <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
-          <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-zinc-800">
-            <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-bold text-zinc-400">2</span>
-            </div>
-            <span className="text-sm font-semibold text-white">Paste any context</span>
+        {/* Links */}
+        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+          <div className="border-b border-zinc-800 px-4 py-3.5">
+            <span className="text-sm font-semibold text-white">Profile links</span>
           </div>
-          <div className="p-3 space-y-2">
+          <div className="p-3">
             <textarea
-              id="context"
-              value={context}
-              onChange={e => {
-                setContext(e.target.value);
-                if (uploadedFileName) setUploadedFileName(null);
-              }}
-              placeholder="LinkedIn summary, resume, personal bio, YAML from the prompt, or freeform notes..."
-              rows={6}
-              className="w-full px-4 py-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition-colors resize-none text-sm"
+              value={links}
+              onChange={e => setLinks(e.target.value)}
+              placeholder={'https://yoursite.com\nhttps://linkedin.com/in/you\nhttps://github.com/you'}
+              rows={3}
+              className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3.5 text-sm text-white placeholder:text-zinc-600 focus:border-violet-500/50 focus:outline-none"
             />
           </div>
         </div>
 
-        {/* Privacy note */}
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-          <Shield className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-zinc-400 leading-relaxed">
+        {/* Freeform paste */}
+        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+          <div className="border-b border-zinc-800 px-4 py-3.5">
+            <span className="text-sm font-semibold text-white">Or paste context</span>
+          </div>
+          <div className="p-3">
+            <textarea
+              value={paste}
+              onChange={e => {
+                setPaste(e.target.value);
+                if (uploadedFileName && /\.(yaml|yml|md|txt)$/i.test(uploadedFileName)) {
+                  setUploadedFileName(null);
+                }
+              }}
+              placeholder="Resume text, YAML from the prompt, bio, or freeform notes..."
+              rows={5}
+              className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3.5 text-sm text-white placeholder:text-zinc-600 focus:border-violet-500/50 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2 rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-3">
+          <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" />
+          <p className="text-xs leading-relaxed text-zinc-400">
             Your raw text is never shown to matches. Only a safe, human-readable twin summary appears in the app.
           </p>
         </div>
 
         <Link
           href="/integrations"
-          className="inline-flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 transition-colors -mt-2"
+          className="-mt-2 inline-flex items-center gap-2 text-sm text-violet-400 transition-colors hover:text-violet-300"
         >
-          <Link2 className="w-4 h-4" />
+          <Link2 className="h-4 w-4" />
           Connect integrations (coming soon)
         </Link>
 
-        {/* CTAs */}
-        <div className="space-y-3">
-          <button
-            onClick={() => proceedToQuestions(true)}
-            disabled={!hasContent}
-            className="w-full py-4 rounded-2xl bg-violet-600 text-white font-semibold text-lg hover:bg-violet-500 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
-          >
-            Build my twin
-            <ArrowRight className="w-5 h-5" />
-          </button>
+        <button
+          onClick={chooseQuestions}
+          className="text-center text-sm text-zinc-500 transition-colors hover:text-violet-400"
+        >
+          Skip to questions
+        </button>
 
-          <button
-            onClick={() => proceedToQuestions(false)}
-            className="w-full py-3.5 rounded-2xl bg-zinc-900 text-zinc-300 text-sm font-medium hover:bg-zinc-800 border border-zinc-800 transition-colors"
-          >
-            Skip this — ask me questions instead
-          </button>
-        </div>
+        <button
+          onClick={proceedWithImport}
+          disabled={!hasContent}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 py-4 text-lg font-semibold text-white transition-colors hover:bg-violet-500 disabled:opacity-40"
+        >
+          Build my twin
+          <ArrowRight className="h-5 w-5" />
+        </button>
       </div>
     </MobileShell>
   );

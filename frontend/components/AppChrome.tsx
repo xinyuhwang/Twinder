@@ -12,7 +12,7 @@ function shouldHideNav(pathname: string): boolean {
   if (pathname === '/join') return true;
   if (pathname.startsWith('/onboarding')) return true;
   if (pathname.startsWith('/auth')) return true;
-  if (/^\/matches\/[^/]+$/.test(pathname)) return true;
+  if (pathname.startsWith('/matches/')) return true;
   if (pathname.startsWith('/room/')) return true;
   return false;
 }

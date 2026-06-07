@@ -86,7 +86,7 @@ export default function SavedMatches() {
             {savedCards.map(card => (
               <li key={card.opponent_id}>
                 <button
-                  onClick={() => router.push(`/matches/${card.opponent_id}`)}
+                  onClick={() => router.push(`/matches/${card.opponent_id}/chat`)}
                   className="flex w-full items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-4 text-left transition-colors hover:border-zinc-700"
                 >
                   <Avatar name={card.opponent_name} size="md" />

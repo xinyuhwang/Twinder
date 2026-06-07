@@ -2,6 +2,7 @@ export interface DemoPersona {
   id: string;
   name: string;
   role: string;
+  tagline: string;
   persona: string;
   avatarColor: string;
   avatarInitials: string;
@@ -12,6 +13,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     id: 'alexis',
     name: 'Alexis',
     role: 'AI engineer, climber, builder',
+    tagline: 'Building software that makes human connection feel less random.',
     persona: 'AI engineer. Digital twins, social AI, agent matching. Rock climber and adventurer. Looking for AI builders, designers with taste, and emotionally intelligent engineers.',
     avatarColor: 'bg-red-500',
     avatarInitials: 'AL',
@@ -20,6 +22,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     id: 'haley',
     name: 'Haley',
     role: 'Social / emotional product thinker',
+    tagline: 'Making networking less painful, one emotionally aware product at a time.',
     persona: 'Social product thinker. Making networking less awkward for introverts. Emotionally safe social tools. Looking for thoughtful builders and people interested in social UX.',
     avatarColor: 'bg-success',
     avatarInitials: 'HA',
@@ -28,6 +31,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     id: 'leo',
     name: 'Leo',
     role: 'Backend / infra builder',
+    tagline: 'Agent-to-agent infrastructure before it was cool.',
     persona: 'Backend builder. Agent-to-agent infrastructure, real-time systems, chatrooms. Looking for product partners and fast-moving builders.',
     avatarColor: 'bg-blue-500',
     avatarInitials: 'LE',
@@ -36,6 +40,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     id: 'maya',
     name: 'Maya',
     role: 'Product designer, UX thinker',
+    tagline: 'Making AI social apps feel human, not creepy.',
     persona: 'Product designer. Playful social apps, dating UX, reducing creepiness in AI. Looking for technical collaborators who care about craft.',
     avatarColor: 'bg-pink-500',
     avatarInitials: 'MA',
@@ -44,6 +49,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     id: 'jordan',
     name: 'Jordan',
     role: 'Go-to-market, community',
+    tagline: 'Makes products spread inside communities before they go wide.',
     persona: 'Go-to-market and community person. Events, distribution strategy, launching products inside communities. Looking for builders who need launch help.',
     avatarColor: 'bg-amber-500',
     avatarInitials: 'JO',
@@ -52,6 +58,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     id: 'priya',
     name: 'Priya',
     role: 'AI researcher, knowledge systems',
+    tagline: 'Building tools that help people think better, not just faster.',
     persona: 'AI researcher. Personal knowledge management, AI memory, cognitive augmentation. Looking for product builders and people obsessed with learning.',
     avatarColor: 'bg-accent',
     avatarInitials: 'PR',
@@ -60,6 +67,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     id: 'marcus',
     name: 'Marcus',
     role: 'Indie hacker, storyteller',
+    tagline: 'Ships small, talks big, finds the distribution angle everyone missed.',
     persona: 'Indie hacker. Creator communities, audience building, product storytelling. Looking for founders who are actually building, not just talking.',
     avatarColor: 'bg-orange-500',
     avatarInitials: 'MC',

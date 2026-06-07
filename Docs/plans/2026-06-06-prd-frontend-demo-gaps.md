@@ -145,9 +145,9 @@ getArenaConversation: (token: string, conversationId: string) =>
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Type check passes: `cd frontend && npx tsc --noEmit`
-- [ ] Lint passes: `cd frontend && npm run lint`
-- [ ] Production build succeeds: `cd frontend && npm run build`
+- [x] Type check passes: `cd frontend && npx tsc --noEmit`
+- [x] Lint passes: `cd frontend && npm run lint`
+- [x] Production build succeeds: `cd frontend && npm run build`
 
 #### Manual Verification:
 - [ ] `/demo` shows the loading sequence, rotating messages, and "Twin ready", then the selector with `HACK-AI-2026` and Alexis preselected.

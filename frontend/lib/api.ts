@@ -1,4 +1,11 @@
-import type { UserRead, RoomRead, MessageRead, MatchmakeResponse } from '@/types';
+import type {
+  UserRead,
+  RoomRead,
+  MessageRead,
+  MatchmakeResponse,
+  TwinPreview,
+  ArenaResponse,
+} from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const WS_BASE = API_BASE.replace(/^http/, 'ws');
@@ -64,4 +71,25 @@ export const api = {
 
   wsUrl: (roomId: string, token: string) =>
     `${WS_BASE}/ws/rooms/${roomId}?token=${token}`,
+
+  intake: (token: string, body: { raw_context: string; answers?: Record<string, string> | null }) =>
+    request<TwinPreview>('/users/me/intake', {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify(body),
+    }),
+
+  startArena: (token: string, mode: string) =>
+    request<ArenaResponse>(`/arena/start?mode=${encodeURIComponent(mode)}`, {
+      method: 'POST',
+      headers: authHeaders(token),
+    }),
+
+  getArenaResults: (token: string) =>
+    request<ArenaResponse>('/arena/results', { headers: authHeaders(token) }),
+
+  getArenaConversation: (token: string, conversationId: string) =>
+    request<MessageRead[]>(`/arena/conversation/${encodeURIComponent(conversationId)}`, {
+      headers: authHeaders(token),
+    }),
 };

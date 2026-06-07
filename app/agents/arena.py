@@ -5,6 +5,7 @@ import uuid
 
 from sqlmodel import select
 
+from app.agents.dat import openness_compatibility
 from app.agents.json_parse import parse_llm_json
 from app.agents.prompts import MATCH_CARD_SCORING_PROMPT, TWIN_OPENER
 from app.agents.twin_prompt import build_twin_system_prompt, persona_with_openness, rich_persona_for_scoring

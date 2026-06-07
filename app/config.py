@@ -1,4 +1,16 @@
+import os
+
 from pydantic_settings import BaseSettings
+
+
+def _clean_empty_env_vars():
+    """Remove env vars that are empty strings so .env file values aren't shadowed."""
+    for key in list(os.environ):
+        if os.environ[key] == "" and key != "PATH":
+            del os.environ[key]
+
+
+_clean_empty_env_vars()
 
 
 class Settings(BaseSettings):

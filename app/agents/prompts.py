@@ -91,7 +91,7 @@ Their conversation:
 
 If either profile includes a divergent-thinking / openness score, treat similar scores as a sign of compatible openness to experience (a meaningful compatibility signal) and weigh closely-matched openness positively; mention it in the summary or non_obvious_overlap when notable.
 
-Generate a match card for {user_a_name} about {user_b_name}. Return a JSON object with:
+Generate a match card for {user_a_name} about {user_b_name}. Every arena conversation gets a card in the swipe stack, including weak connections — use the full 0-100 range and do not withhold cards for low scores. Return a JSON object with:
 - "score": 0-100 connection quality score. Be discriminating — not everyone is a 90. Use the full range: 40-60 for weak matches, 60-75 for decent ones, 75-90 for strong ones, 90+ only for exceptional chemistry.
 - "headline": a punchy 5-10 word headline (e.g. "Fellow climber building AI for biotech"). Make it specific to THESE two people.
 - "match_type": one of "kindred_spirit", "complementary_skills", "shared_mission", "creative_spark", "unexpected_connection"

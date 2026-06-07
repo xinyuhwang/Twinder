@@ -26,6 +26,24 @@ def _trim_to_sentences(text: str, max_sentences: int = 2) -> str:
     return trimmed
 
 
+def _fallback_match_card(user_a: User, user_b: User, reason: str = "") -> dict:
+    """Minimal card so every opponent appears in the stack even if scoring fails."""
+    summary = f"Your twin met {user_b.name}, but we couldn't fully score the conversation."
+    if reason:
+        summary = f"{summary} ({reason})"
+    return {
+        "score": 40,
+        "headline": f"Met {user_b.name}",
+        "match_type": "unexpected_connection",
+        "summary": summary,
+        "common_interests": [],
+        "opponent_id": user_b.id,
+        "opponent_name": user_b.name,
+        "opponent_avatar": user_b.avatar_url,
+        "conversation_id": None,
+    }
+
+
 def _flip_card_perspective(card: dict, user_a: User, user_b: User) -> dict:
     """Flip a cached match card from the other user's perspective."""
     flipped = dict(card)
@@ -82,9 +100,14 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
     await r.set(status_key, "running", ex=3600)
 
     async def run_one(opponent: User) -> None:
-        card = await _arena_conversation(user, opponent, mode)
-        if not isinstance(card, dict) or "score" not in card:
-            return
+        try:
+            card = await _arena_conversation(user, opponent, mode)
+        except Exception as e:
+            card = _fallback_match_card(user, opponent, str(e))
+        if not isinstance(card, dict):
+            card = _fallback_match_card(user, opponent, "invalid response")
+        if "score" not in card:
+            card = {**card, "score": 40}
         current_raw = await r.get(result_key)
         current = json.loads(current_raw) if current_raw else {"arena_id": arena_id, "match_cards": []}
         cards = current.get("match_cards", [])

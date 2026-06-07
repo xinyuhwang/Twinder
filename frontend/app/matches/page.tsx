@@ -283,7 +283,7 @@ export default function Matches() {
   }
 
   const activeCard = cards[currentIndex] ?? null;
-  const nextCard = cards[currentIndex + 1] ?? null;
+  const stackCards = cards.slice(currentIndex, currentIndex + 3);
 
   if (loading) {
     return (
@@ -303,7 +303,7 @@ export default function Matches() {
           <div className="space-y-0.5">
             <h1 className="text-2xl font-bold text-white">Your matches</h1>
             <p className="text-zinc-500 text-sm">
-              {cards.length} ranked by your twin
+              {cards.length} agents ranked by your twin
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -313,12 +313,16 @@ export default function Matches() {
 
         {activeCard ? (
           <div className="relative flex-1 min-h-[520px]">
-            {nextCard && (
+            {stackCards.slice(0, -1).map((card, i) => (
               <div
+                key={card.opponent_id}
                 className="absolute inset-0 rounded-3xl bg-zinc-900 border border-zinc-800"
-                style={{ transform: 'scale(0.96) translateY(8px)', zIndex: 0 }}
+                style={{
+                  transform: `scale(${0.96 - i * 0.02}) translateY(${(i + 1) * 8}px)`,
+                  zIndex: i,
+                }}
               />
-            )}
+            ))}
             <AnimatePresence mode="popLayout">
               <SwipeCard
                 key={activeCard.opponent_id}

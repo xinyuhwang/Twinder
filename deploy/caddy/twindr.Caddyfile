@@ -1,0 +1,27 @@
+# Twinder reverse-proxy blocks.
+#
+# Append these to the Caddy site that owns :80/:443. On the production droplet that
+# Caddy is the Bluesky PDS's containerized Caddy, configured at:
+#     /pds/caddy/etc/caddy/Caddyfile
+# (There can only be one process on :80/:443, so Twinder reuses it as its TLS front door.)
+#
+# Reload without sudo via the local admin API:
+#     curl -X POST http://127.0.0.1:2019/load \
+#          -H "Content-Type: text/caddyfile" \
+#          --data-binary @/pds/caddy/etc/caddy/Caddyfile
+# (or, with sudo: sudo docker exec caddy caddy reload --config /etc/caddy/Caddyfile)
+#
+# Certs are issued automatically by Let's Encrypt. DNS A records for twindr.io,
+# www.twindr.io, and api.twindr.io must point at the droplet first.
+
+twindr.io {
+	reverse_proxy 127.0.0.1:3001
+}
+
+api.twindr.io {
+	reverse_proxy 127.0.0.1:8000
+}
+
+www.twindr.io {
+	redir https://twindr.io{uri} permanent
+}

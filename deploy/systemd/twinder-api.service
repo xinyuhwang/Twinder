@@ -1,0 +1,15 @@
+[Unit]
+Description=Twinder FastAPI backend (uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/src/Twinder
+# pydantic-settings reads .env relative to WorkingDirectory
+ExecStart=%h/src/Twinder/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,208 @@
+#!/usr/bin/env bash
+# twinder-deploy — git-poll deployer.
+#   target file holds ONE line:
+#     a branch name  -> rolling: always deploy HEAD of origin/<branch>
+#     a commit/tag   -> pinned:  deploy exactly that, then stop advancing
+set -uo pipefail
+
+REPO="${TWINDER_REPO:-$HOME/src/Twinder}"
+FRONTEND="$REPO/frontend"
+CFG_DIR="$HOME/.config/twinder-deploy"
+TARGET_FILE="$CFG_DIR/target"
+LOCK="$CFG_DIR/deploy.lock"
+LOG="$CFG_DIR/deploy.log"
+HOLD_FILE="$CFG_DIR/hold"
+export PATH="/usr/bin:/usr/local/bin:/bin:$PATH"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+mkdir -p "$CFG_DIR"
+
+log(){ printf '%s %s\n' "$(date -Is)" "$*" >>"$LOG"; printf '%s\n' "$*" >&2; }
+read_target(){ tr -d '[:space:]' < "$TARGET_FILE" 2>/dev/null; }
+svc(){ systemctl --user "$@"; }
+
+# echo desired SHA for the current target, or return 1 if it doesn't resolve
+resolve(){
+  local t; t="$(read_target)"; [ -z "$t" ] && t=deploy
+  if git -C "$REPO" show-ref --verify --quiet "refs/remotes/origin/$t"; then
+    git -C "$REPO" rev-parse "origin/$t"
+  elif git -C "$REPO" rev-parse --verify --quiet "${t}^{commit}" >/dev/null 2>&1; then
+    git -C "$REPO" rev-parse --verify "${t}^{commit}"
+  else
+    return 1
+  fi
+}
+
+is_branch(){ local t; t="$(read_target)"; [ -z "$t" ] && t=deploy
+  git -C "$REPO" show-ref --verify --quiet "refs/remotes/origin/$t"; }
+
+# --- reusable build/restart steps (shared by auto-deploy and manual commands) ---
+acquire_lock(){ exec 9>"$LOCK"; flock -n 9 || { echo "another deploy/rebuild in progress; try again shortly"; exit 0; }; }
+
+build_web(){ # build_web [--ci]
+  if [ "${1:-}" = "--ci" ]; then
+    log "npm ci"
+    ( cd "$FRONTEND" && npm ci --no-audit --no-fund ) >>"$LOG" 2>&1 || { log "ERROR npm ci failed"; return 1; }
+  fi
+  log "npm run build"
+  ( cd "$FRONTEND" && npm run build ) >>"$LOG" 2>&1 || { log "ERROR frontend build failed (old build still serving)"; return 1; }
+}
+install_be(){ log "pip install -e ."; "$REPO/.venv/bin/pip" install -q -e "$REPO" >>"$LOG" 2>&1 || { log "WARN pip install failed"; return 1; }; }
+
+do_run(){
+  exec 9>"$LOCK"
+  flock -n 9 || { echo "deploy already running; skipping"; exit 0; }
+
+  # Layer 1: explicit hold pauses the poller entirely (stderr-only so the log doesn't spam every 60s)
+  if [ -f "$HOLD_FILE" ]; then echo "on hold ($HOLD_FILE) — auto-deploy paused, skipping" >&2; exit 0; fi
+
+  git -C "$REPO" fetch --quiet --prune --tags origin 2>>"$LOG" || log "WARN fetch failed (offline?) — using cached refs"
+
+  local t desired current
+  t="$(read_target)"; [ -z "$t" ] && t=deploy
+  if ! desired="$(resolve)"; then
+    log "target '$t' does not resolve yet (no such branch/commit on origin) — nothing to deploy"
+    exit 0
+  fi
+  current="$(git -C "$REPO" rev-parse HEAD)"
+  [ "$desired" = "$current" ] && exit 0
+
+  # Layer 2: never clobber uncommitted local changes (ad-hoc experiments are safe by default)
+  if [ -n "$(git -C "$REPO" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+    log "WARN working tree dirty — refusing to deploy ${desired:0:8} (would clobber local edits). Commit/stash, or 'twinder-deploy hold' to pause."
+    exit 0
+  fi
+
+  # Decide what work is needed from the diff (fall back to "do everything" if unknown)
+  local changed restart_api=0 restart_web=0 npm_ci=0 pip=0
+  changed="$(git -C "$REPO" diff --name-only "$current" "$desired" 2>/dev/null)" || changed=""
+  if [ -z "$changed" ]; then
+    restart_api=1; restart_web=1; npm_ci=1; pip=1
+  else
+    grep -q '^frontend/' <<<"$changed" && restart_web=1
+    grep -qv '^frontend/' <<<"$changed" && restart_api=1
+    grep -qE '^frontend/package(-lock)?\.json' <<<"$changed" && npm_ci=1
+    grep -q '^pyproject\.toml' <<<"$changed" && pip=1
+  fi
+
+  log "deploy ${current:0:8} -> ${desired:0:8} (target=$t)"
+  if ! { git -C "$REPO" checkout --quiet --force --detach "$desired" 2>>"$LOG" \
+         && git -C "$REPO" reset --hard --quiet "$desired" 2>>"$LOG"; }; then
+    log "ERROR git checkout failed — aborting"; exit 1
+  fi
+
+  if [ "$pip" = 1 ]; then
+    log "backend deps changed -> pip install -e ."
+    "$REPO/.venv/bin/pip" install -q -e "$REPO" >>"$LOG" 2>&1 || log "WARN pip install failed (continuing)"
+  fi
+
+  if [ "$restart_web" = 1 ]; then
+    if [ "$npm_ci" = 1 ]; then
+      log "lockfile changed -> npm ci"
+      ( cd "$FRONTEND" && npm ci --no-audit --no-fund ) >>"$LOG" 2>&1 \
+        || { log "ERROR npm ci failed — aborting (old build still serving)"; exit 1; }
+    fi
+    log "npm run build"
+    ( cd "$FRONTEND" && npm run build ) >>"$LOG" 2>&1 \
+      || { log "ERROR frontend build failed — NOT restarting web (old build still serving)"; exit 1; }
+  fi
+
+  [ "$restart_api" = 1 ] && { svc restart twinder-api && log "restarted twinder-api"; }
+  [ "$restart_web" = 1 ] && { svc restart twinder-web && log "restarted twinder-web"; }
+  log "deploy complete @ ${desired:0:8}"
+}
+
+cmd="${1:-status}"; shift 2>/dev/null || true
+case "$cmd" in
+  run|now) do_run ;;
+  track)
+    [ $# -ge 1 ] || { echo "usage: twinder-deploy track <branch>"; exit 1; }
+    printf '%s\n' "$1" > "$TARGET_FILE"
+    echo "target -> $1  (rolling: tracks origin/$1 HEAD)"
+    do_run ;;
+  pin)
+    [ $# -ge 1 ] || { echo "usage: twinder-deploy pin <sha|tag>"; exit 1; }
+    git -C "$REPO" fetch --quiet --tags origin 2>/dev/null || true
+    sha="$(git -C "$REPO" rev-parse --verify "${1}^{commit}" 2>/dev/null)" \
+      || { echo "cannot resolve '$1' to a commit"; exit 1; }
+    printf '%s\n' "$sha" > "$TARGET_FILE"
+    echo "pinned -> $sha  (frozen; new pushes ignored until you re-track)"
+    do_run ;;
+  status)
+    t="$(read_target)"; [ -z "$t" ] && t=deploy
+    echo "target:    $t"
+    if d="$(resolve 2>/dev/null)"; then echo "resolves:  $d"; else echo "resolves:  <unresolved — branch/commit not on origin yet>"; fi
+    echo "deployed:  $(git -C "$REPO" rev-parse HEAD 2>/dev/null)"
+    is_branch && echo "mode:      rolling (follows branch HEAD)" || echo "mode:      pinned (frozen commit/tag)"
+    [ -f "$HOLD_FILE" ] && echo "hold:      YES — auto-deploy PAUSED" || echo "hold:      no"
+    if [ -n "$(git -C "$REPO" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+      echo "worktree:  DIRTY — local changes present (poller will not clobber)"
+    else echo "worktree:  clean"; fi
+    echo "--- timer ---"; svc --no-pager list-timers twinder-deploy.timer 2>/dev/null | head -2
+    echo "--- services ---"; svc --no-pager --plain --legend=false list-units 'twinder-*' 2>/dev/null
+    echo "--- last deploy log ---"; tail -n 8 "$LOG" 2>/dev/null ;;
+  log|logs) tail -n "${1:-40}" "$LOG" 2>/dev/null ;;
+
+  # --- manual redeploy of the CURRENT checkout (no git change needed) ---
+  rebuild|redeploy) # rebuild [web|api|all] [--ci]
+    acquire_lock
+    tgt="${1:-all}"; flag="${2:-}"
+    case "$tgt" in
+      web) build_web "$flag" && svc restart twinder-web && log "manual: rebuilt + restarted web" ;;
+      api) install_be; svc restart twinder-api && log "manual: reinstalled deps + restarted api" ;;
+      all) install_be
+           if build_web "$flag"; then svc restart twinder-web; fi
+           svc restart twinder-api
+           log "manual: rebuilt web + restarted api+web" ;;
+      *) echo "usage: twinder-deploy rebuild [web|api|all] [--ci]"; exit 1 ;;
+    esac ;;
+
+  # --- restart only, no build/deps ---
+  restart) # restart [web|api|all]
+    tgt="${1:-all}"
+    case "$tgt" in
+      web) svc restart twinder-web && echo "restarted web" ;;
+      api) svc restart twinder-api && echo "restarted api" ;;
+      all) svc restart twinder-api twinder-web && echo "restarted api + web" ;;
+      *) echo "usage: twinder-deploy restart [web|api|all]"; exit 1 ;;
+    esac ;;
+
+  # --- pause/resume the auto-deploy poller (for ad-hoc local experiments) ---
+  hold|pause)
+    : > "$HOLD_FILE"
+    echo "HELD — auto-deploy paused. Your checkout & local changes won't be touched."
+    echo "Make edits, use 'twinder-deploy rebuild ...' freely, then 'twinder-deploy resume'." ;;
+  resume|unhold)
+    rm -f "$HOLD_FILE"
+    echo "RESUMED — poller is tracking '$(read_target)' again."
+    if [ -n "$(git -C "$REPO" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+      echo "NOTE: working tree is dirty, so the poller will STILL refuse to clobber it."
+      echo "      To hand control back, commit/stash your changes or discard with:"
+      echo "        git -C \"$REPO\" checkout -- .   (or: git -C \"$REPO\" stash)"
+    fi ;;
+
+  *)
+    cat <<'EOF'
+usage: twinder-deploy <command>
+
+  deploy control (git-driven):
+    status                 show target, resolved/deployed SHA, services, log tail
+    now                    poll origin now and deploy if the target SHA changed
+    track <branch>         rolling: follow origin/<branch> HEAD
+    pin <sha|tag>          pinned: freeze on a commit/tag (instant rollback)
+
+  manual redeploy (current checkout, no git change):
+    rebuild [web|api|all] [--ci]   FE: npm run build (+ --ci for clean install) & restart
+                                   BE: pip install -e . & restart;  all = both
+    restart [web|api|all]          restart service(s) only, no build
+
+  ad-hoc experiments (pause the poller so it can't clobber local work):
+    hold                   pause auto-deploy; checkout & local changes are left alone
+    resume                 re-enable auto-deploy tracking
+
+    logs [n]               tail the deploy log
+
+note: even without 'hold', the poller refuses to overwrite a DIRTY working tree.
+      'hold' additionally protects local *commits* from being reset away.
+EOF
+    exit 1 ;;
+esac

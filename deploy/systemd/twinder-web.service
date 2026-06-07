@@ -1,0 +1,17 @@
+[Unit]
+Description=Twinder Next.js frontend (next start)
+After=network-online.target twinder-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/src/Twinder/frontend
+Environment=NODE_ENV=production
+Environment=PATH=/usr/bin:/usr/local/bin:/bin
+# Serves the prebuilt .next; NEXT_PUBLIC_* is baked at build time
+ExecStart=%h/src/Twinder/frontend/node_modules/.bin/next start -H 127.0.0.1 -p 3001
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

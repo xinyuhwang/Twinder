@@ -46,16 +46,6 @@ async def run_conversation(room_id: str):
     if len(users) < 2:
         return
 
-    # Wait for synthesis to complete for all participants (max 60s)
-    for _ in range(60):
-        session.expire_all()
-        if all(
-            (lambda pv: pv and pv.system_instruction)(get_active_profile(session, u.id))
-            for u in users
-        ):
-            break
-        await asyncio.sleep(1)
-
     # Build system prompts for each agent
     system_prompts = {}
     for user in users:

@@ -168,9 +168,9 @@ Backend stores and streams **full transcripts**. PRD wants **highlights by defau
 
 #### 6. Demo Users
 
-PRD has 7 rich seeded personas (Alexis, Haley, Leo, Maya, Jordan, Priya, Marcus). Backend has no seed script.
+PRD has 7 rich seeded personas: Alexis, Haley, Leo, Maya, Jordan, Priya, and Marcus. The backend now has an idempotent seed script in `app/seed.py`, called from the FastAPI lifespan in `app/main.py`.
 
-For demo: run 7 `dev-login` calls with personas derived from PRD copy, or add a `/dev/seed` endpoint.
+For demo: use `dev-login` to select one of the seeded users from the frontend; seed data is created or updated at backend startup.
 
 #### 7. Auth UX
 
@@ -205,18 +205,25 @@ Auth -> PUT /users/me (persona) -> POST /rooms/matchmake
     -> POST /complete -> vibe_score event -> GET /rooms (matches)
 ```
 
+### Backend Arena Flow (built, frontend unused)
+
+```
+Auth -> POST /users/me/intake or seeded persona
+    -> POST /arena/start?mode=networking
+    -> Redis arena cache + arena-convo streams
+    -> GET /arena/results
+    -> GET /arena/conversation/{conversation_id}
+```
+
 ### Integration Flow (target)
 
 ```
 Frontend onboarding (questions + paste)
-    -> PUT /users/me {persona}          [today]
-    -> POST /users/me/intake            [future]
-    -> POST /rooms/matchmake (x N)
-    -> WS message events (arena feed)
-    -> GET /rooms (match cards)
-    -> GET /rooms/{id}/messages (eavesdrop)
+    -> POST /users/me/intake
+    -> POST /arena/start?mode=
+    -> GET /arena/results (match cards)
+    -> GET /arena/conversation/{conversation_id} (eavesdrop)
     -> Meet/Save/Pass (localStorage)
-    -> POST /takeover, /complete
 ```
 
 ---
@@ -225,28 +232,29 @@ Frontend onboarding (questions + paste)
 
 ### Phase 1: Wire the Demo Shell (1-2 days)
 
-- Scaffold Next.js per PRD routes.
-- Add `lib/api.ts` with auth, profile update, matchmake poll, rooms list, messages, WebSocket helper.
+- Fill in missing PRD routes: `/join`, `/integrations`, `/onboarding`, `/onboarding/questions`, `/onboarding/preview`, `/matches`, `/matches/[matchId]`.
+- Extend `frontend/lib/api.ts` with `/users/me/intake`, `/arena/start`, `/arena/results`, and `/arena/conversation/{conversation_id}`.
 - Demo entry: `dev-login` as Alexis (persona from PRD).
-- Match queue: map `GET /rooms` to swipe cards using `vibe_score` + `vibe_summary` + participant info.
-- Eavesdrop: bind to WS + message history.
+- Match queue: map arena `MatchCard` results to swipe cards.
+- Eavesdrop: show selected arena conversation highlights from `GET /arena/conversation/{conversation_id}`.
 
 ### Phase 2: Close the Profile Gap
 
-- Add `POST /users/me/intake` (paste text + questionnaire answers).
-- LLM generates YAML using `Prompts/intake.md` + `Templates/profile.yaml`.
-- Store YAML server-side; expose sanitized twin preview; set `persona` for agents.
+- Wire onboarding and required questions to `POST /users/me/intake`.
+- Render the sanitized `TwinPreview` response.
+- Keep profile YAML, matching vector, and generated system instruction server-side.
 
 ### Phase 3: Close the Matching Gap
 
 Either:
 
 - Accept 1:1 live matching for the live demo, or
-- Add arena orchestrator: enqueue user against N seeded twins, aggregate scores into ranked match list.
+- Use the existing arena batch API and cap/filter results to the PRD's 5-agent demo shape.
 
 ### Phase 4: Rich Match Output + Actions
 
-- Expand scorer output to PRD match detail shape.
+- Use arena `MatchCard` fields for match queue and match detail.
+- Expand room scorer output only if the live room flow remains part of the demo.
 - Add Meet notification stub (even if mocked server-side).
 - Optional CopilotKit endpoint for "Ask Why".
 
@@ -259,6 +267,7 @@ Either:
 - `User`: `id`, `google_id`, `email`, `name`, `avatar_url`, `persona`, `created_at`
 - `Room`: `id`, `status`, `vibe_score`, `vibe_summary`, `created_at`, `completed_at`
 - `RoomParticipant`: `room_id`, `user_id`, `is_human_active`, `joined_at`
+- `ProfileVersion`: `user_id`, `version`, `profile_yaml`, `matching_vector`, `system_instruction`, `is_active`, `created_at`
 
 ### Redis (ephemeral + real-time)
 
@@ -270,6 +279,8 @@ Either:
 | `room:{id}:state` | Hash | Status, turn, message count, human overrides |
 | `room:{id}:events` | Pub/Sub | Fan-out to WebSocket clients |
 | `rooms:active` | Set | Active room IDs |
+| `arena:{user_id}:latest` | String | Latest arena id and match cards, TTL 1 hour |
+| `arena-convo:{uuid}` | Stream | Arena conversation for eavesdrop, TTL 1 hour |
 
 ### Vibe Score Payload (from scorer)
 
@@ -286,23 +297,23 @@ Either:
 
 ## Bottom Line
 
-The backend implements a **real-time 1:1 agent chat + vibe scoring** pipeline. The PRD implements a **polished multi-agent demo** with rich static match narratives. They share the same story but different **granularity and orchestration**.
+The backend implements two useful paths: a **real-time 1:1 agent chat + vibe scoring** pipeline and an **arena batch matching** pipeline that is closer to the PRD match-card shape. The current frontend only uses the 1:1 room path.
 
 **Highest-value connection path for a hackathon demo:**
 
 1. Build the PRD frontend with an `api.ts` layer (not mocks).
 2. Use `dev-login` + seeded personas for the 7 demo users.
-3. Treat the arena as a **live progress UI** over real WebSocket conversations (or run conversations ahead of time and replay).
-4. Map rooms to match cards from scorer output.
-5. Prioritize one new backend piece: **intake-to-persona** so onboarding feeds real agent behavior.
+3. Wire onboarding to the existing intake endpoint and keep raw YAML hidden.
+4. Wire the arena and match queue to the existing arena batch endpoints.
+5. Keep Meet, Save, Pass, and Copilot-style explanations local or mocked until product endpoints exist.
 
 **Largest gaps to resolve before the demo feels integrated:**
 
-- Arena orchestration (1 vs many)
-- Rich profile/intake API
-- Rich match explanation JSON
+- Frontend routes for onboarding, preview, matches, match detail, integrations, and join
+- Frontend wiring to existing intake and arena APIs
+- Save, Pass, Meet, and Copilot-style product actions
 
-Everything else is mostly frontend wiring and local demo state.
+Most remaining PRD alignment is frontend wiring, demo-state handling, and choosing whether the visible demo uses the room path, the arena path, or both.
 
 ---
 

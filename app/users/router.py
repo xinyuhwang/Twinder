@@ -80,7 +80,7 @@ async def run_intake(
     session.refresh(user)
 
     twin_prompt = build_twin_system_prompt(user, body.mode, session)
-    preview = _to_twin_preview(yaml_str)
+    preview = _to_twin_preview(synthesis, yaml_str)
     return TwinPreview(**preview, twin_prompt=twin_prompt)
 
 

@@ -41,8 +41,13 @@ export interface ArenaStatusResponse {
 
 export interface TwinPreview {
   public_safe_summary: string | null;
+  agent_vibe?: string | null;
   looking_for: string[];
   interests: string[];
+  can_help_with?: string[];
+  conversation_bait?: string[];
+  agent_voice?: string | null;
+  completeness_score?: number | null;
   twin_prompt?: string | null;
 }
 

@@ -56,7 +56,8 @@ export default function OnboardingPreview() {
     const answers = localStore.getOnboardingAnswers();
     const hasAnswers = answers && Object.values(answers).some(v => v.trim());
     const hasInput = Boolean(rawContext) || Boolean(hasAnswers);
-    const persona = DEMO_PERSONAS.find(p => p.id === localStore.getPersonaId()) ?? DEMO_PERSONAS[0];
+    const personaId = localStore.getPersonaId();
+    const persona = personaId ? (DEMO_PERSONAS.find(p => p.id === personaId) ?? null) : null;
     const userName = localStore.getUserName();
     const mode = localStore.getEventMode();
 
@@ -88,7 +89,7 @@ export default function OnboardingPreview() {
 
         if (!hasInput) {
           // Fully skipped — no input at all. Build from persona only.
-          const derived = buildPreviewFromPersona(persona, userName);
+          const derived = buildPreviewFromPersona(persona ?? DEMO_PERSONAS[0], userName);
           setPreview(derived);
           await syncPersonaIfEmpty(token!, derived.summary);
           const prompt = await loadTwinPrompt();
@@ -132,7 +133,7 @@ export default function OnboardingPreview() {
         localStore.setTwinPreview(twin);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not build twin preview. Is the backend running?');
-        const fallback = buildPreviewFromPersona(persona, userName);
+        const fallback = buildPreviewFromPersona(persona ?? DEMO_PERSONAS[0], userName);
         setPreview(fallback);
         localStore.setTwinPreview({
           public_safe_summary: fallback.summary,

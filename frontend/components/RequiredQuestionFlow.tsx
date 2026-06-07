@@ -15,13 +15,13 @@ export const REQUIRED_QUESTIONS: FlowQuestion[] = [
     text: 'If you could have an animal follow you around, what would it be and why?',
   },
   {
-    id: 'dat',
-    text: 'Quick creativity check: name 10 words as different from each other as possible.',
-    kind: 'dat',
-  },
-  {
     id: 'event_goals',
     text: 'What do you want from this event, and what should people know about you?',
+  },
+  {
+    id: 'dat',
+    text: 'Name 10 words as different from each other as you can — we use the spread to gauge creative range for better matches.',
+    kind: 'dat',
   },
   {
     id: 'belief_changed',
@@ -55,6 +55,9 @@ export function RequiredQuestionFlow({
   const totalSteps = questionList.length;
   const progress = ((step + 1) / totalSteps) * 100;
   const isLast = step >= totalSteps - 1;
+  const eventGoalsAnswered = (answers['event_goals'] ?? '').trim().length > 0;
+  const currentIsEventGoals = current.id === 'event_goals' && input.trim().length > 0;
+  const canFinish = eventGoalsAnswered || currentIsEventGoals;
 
   function advance(nextAnswers: Record<string, string>) {
     setAnswers(nextAnswers);
@@ -78,6 +81,7 @@ export function RequiredQuestionFlow({
   }
 
   function handleFinishEarly() {
+    if (!canFinish) return;
     const payload = { ...answers, [current.id]: input.trim() || answers[current.id] || '' };
     if (onFinishEarly) {
       onFinishEarly(payload);
@@ -151,9 +155,10 @@ export function RequiredQuestionFlow({
 
       <button
         onClick={handleFinishEarly}
-        className="mt-auto w-full rounded-2xl border border-border bg-surface py-3.5 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-secondary"
+        disabled={!canFinish}
+        className="mt-auto w-full rounded-2xl border border-border bg-surface py-3.5 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-secondary disabled:opacity-40"
       >
-        Finish onboarding
+        {canFinish ? 'Finish onboarding' : 'Answer the event question to continue'}
       </button>
     </div>
   );

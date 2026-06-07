@@ -524,31 +524,99 @@ def _rich_scoring_context_from_synthesis(synthesis: dict) -> str:
     return "\n".join(parts) if parts else ""
 
 
-def _to_twin_preview(yaml_str: str) -> dict:
-    """Extract only public-safe fields for the TwinPreview response."""
-    data = _parse_yaml(yaml_str)
-
-    # public_safe_summary
-    identity = data.get("identity_snapshot", {}) or {}
-    summary = identity.get("public_safe_summary")
-
-    # interests — flatten all categories
+def _interests_from_yaml(data: dict) -> list:
     interests_data = data.get("interests", {}) or {}
-    interests: list[str] = []
+    interests: list = []
     for category in ("professional", "intellectual", "creative", "social", "lifestyle", "niche_obsessions"):
         items = interests_data.get(category) or []
         if isinstance(items, list):
             interests.extend([str(i) for i in items if i])
+    return interests
+
+
+def _to_twin_preview(synthesis: dict, yaml_str: str) -> dict:
+    """Extract public-safe fields, preferring synthesis output, falling back to intake YAML."""
+    data = _parse_yaml(yaml_str)
+    profile = (synthesis.get("profile") or {}) if synthesis else {}
+    meta = profile.get("profile_metadata") or {}
+
+    # public_safe_summary
+    user_identity = profile.get("user_identity") or {}
+    summary = user_identity.get("public_safe_summary") or user_identity.get("short_public_bio")
+    if not summary:
+        identity = data.get("identity_snapshot", {}) or {}
+        summary = identity.get("public_safe_summary")
+
+    # agent_vibe
+    vibe_model = profile.get("vibe_model") or {}
+    agent_vibe = vibe_model.get("one_sentence_vibe")
+    if not agent_vibe and summary:
+        agent_vibe = str(summary).split(".")[0] or None
+
+    # interests
+    syn_interests = profile.get("interests") or {}
+    if syn_interests:
+        interests: list = []
+        for category in ("professional", "intellectual", "creative", "social", "lifestyle", "niche_obsessions"):
+            items = syn_interests.get(category) or []
+            if isinstance(items, list):
+                interests.extend([str(i) for i in items if i])
+    else:
+        interests = _interests_from_yaml(data)
 
     # looking_for
-    matching = data.get("social_and_matching_intelligence", {}) or {}
-    looking_for_raw = matching.get("people_i_may_want_to_meet") or []
-    looking_for = [str(i) for i in looking_for_raw if i] if isinstance(looking_for_raw, list) else []
+    looking_for_data = profile.get("looking_for") or {}
+    if looking_for_data:
+        lf_parts: list = []
+        for key in ("explicit_people_requested", "inferred_people_who_may_fit", "energies"):
+            items = looking_for_data.get(key) or []
+            if isinstance(items, list):
+                lf_parts.extend([str(i) for i in items if i])
+        seen: set = set()
+        looking_for: list = []
+        for item in lf_parts:
+            key_lower = item.lower().strip()
+            if key_lower not in seen:
+                seen.add(key_lower)
+                looking_for.append(item)
+    else:
+        matching = data.get("social_and_matching_intelligence", {}) or {}
+        looking_for_raw = matching.get("people_i_may_want_to_meet") or []
+        looking_for = [str(i) for i in looking_for_raw if i] if isinstance(looking_for_raw, list) else []
+
+    # can_help_with
+    skills = profile.get("skills_and_strengths") or {}
+    can_help_with_raw = skills.get("can_help_with") or []
+    can_help_with = [str(i) for i in can_help_with_raw if i] if isinstance(can_help_with_raw, list) else []
+
+    # conversation_bait
+    conv_hooks = profile.get("conversation_hooks") or {}
+    bait_raw = conv_hooks.get("topics_likely_to_create_spark") or conv_hooks.get("openers_about_user") or []
+    conversation_bait = [str(i) for i in bait_raw if i][:3] if isinstance(bait_raw, list) else interests[:3]
+
+    # agent_voice
+    comm_style = profile.get("communication_style") or {}
+    twin_voice = comm_style.get("likely_twin_voice") or {}
+    agent_voice = twin_voice.get("summary") if isinstance(twin_voice, dict) else None
+
+    # completeness_score
+    raw_score = meta.get("profile_completeness_score")
+    completeness_score: Optional[int] = None
+    if raw_score is not None:
+        try:
+            completeness_score = max(0, min(100, int(raw_score)))
+        except (ValueError, TypeError):
+            pass
 
     return {
         "public_safe_summary": str(summary) if summary else None,
+        "agent_vibe": str(agent_vibe) if agent_vibe else None,
         "looking_for": looking_for[:5],
         "interests": interests[:10],
+        "can_help_with": can_help_with[:5],
+        "conversation_bait": conversation_bait,
+        "agent_voice": str(agent_voice) if agent_voice else None,
+        "completeness_score": completeness_score,
     }
 
 

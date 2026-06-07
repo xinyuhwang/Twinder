@@ -108,8 +108,13 @@ class DatResult(BaseModel):
 
 class TwinPreview(BaseModel):
     public_safe_summary: Optional[str] = None
+    agent_vibe: Optional[str] = None
     looking_for: list[str] = []
     interests: list[str] = []
+    can_help_with: list[str] = []
+    conversation_bait: list[str] = []
+    agent_voice: Optional[str] = None
+    completeness_score: Optional[int] = None
     twin_prompt: Optional[str] = None
 
 

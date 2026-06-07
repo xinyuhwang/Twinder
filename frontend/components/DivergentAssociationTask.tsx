@@ -73,13 +73,17 @@ export function DivergentAssociationTask({
     }
   }
 
-  const prompt = count === 0 ? 'Enter a random word.' : 'Enter another random word.';
+  const heading = done
+    ? 'Got all 10.'
+    : count === 0
+      ? 'Name 10 words as different from each other as you can — we use the spread to gauge creative range for better matches.'
+      : 'Enter another word.';
 
   return (
     <div className="flex flex-col gap-6 flex-1">
       <div className="space-y-1">
         <h2 className="text-xl font-semibold text-primary leading-snug">
-          {done ? 'Got all 10.' : prompt}
+          {heading}
         </h2>
         {count > 0 && (
           <p className="text-sm text-subtle tabular-nums">

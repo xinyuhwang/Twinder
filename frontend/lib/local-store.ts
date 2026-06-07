@@ -6,7 +6,6 @@ const KEY = {
   userId: 'twinder_user_id',
   userName: 'twinder_user_name',
   personaId: 'twinder_persona_id',
-  currentRoomId: 'twinder_current_room_id',
   eventMode: 'twinder_event_mode',
   eventCode: 'twinder_event_code',
   rawContext: 'twinder_raw_context',
@@ -56,9 +55,6 @@ export const localStore = {
 
   getPersonaId: () => typeof window !== 'undefined' ? localStorage.getItem(KEY.personaId) : null,
   setPersonaId: (v: string) => localStorage.setItem(KEY.personaId, v),
-
-  getCurrentRoomId: () => typeof window !== 'undefined' ? localStorage.getItem(KEY.currentRoomId) : null,
-  setCurrentRoomId: (v: string) => localStorage.setItem(KEY.currentRoomId, v),
 
   getEventMode: (): EventMode => {
     const v = typeof window !== 'undefined' ? localStorage.getItem(KEY.eventMode) : null;

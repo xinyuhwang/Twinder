@@ -18,6 +18,7 @@ def _migrate_db():
         ("room", "match_card_call_id", "TEXT"),
         ("user", "dat_score", "FLOAT"),
         ("user", "dat_words", "TEXT"),
+        ("user", "age", "INTEGER"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in new_columns:

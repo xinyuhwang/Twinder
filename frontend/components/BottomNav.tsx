@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Layers, Zap, Bookmark, Radio } from 'lucide-react';
+import { Layers, Zap, Bookmark, User } from 'lucide-react';
 import { localStore } from '@/lib/local-store';
 
 const TABS = [
   { href: '/matches', label: 'Matches', icon: Layers },
   { href: '/arena', label: 'Arena', icon: Zap },
   { href: '/saved', label: 'Saved', icon: Bookmark },
-  { href: '/live', label: 'Live', icon: Radio },
+  { href: '/profile', label: 'Profile', icon: User },
 ] as const;
 
 export function BottomNav() {
@@ -32,7 +32,7 @@ export function BottomNav() {
         {TABS.map(({ href, label, icon: Icon }) => {
           const active =
             pathname === href ||
-            (href !== '/live' && pathname.startsWith(`${href}/`));
+            pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}

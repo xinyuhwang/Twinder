@@ -32,6 +32,8 @@ async def update_me(
 ):
     if body.name is not None:
         user.name = body.name
+    if body.age is not None:
+        user.age = body.age
     if body.persona is not None:
         user.persona = body.persona
     session.add(user)

@@ -9,7 +9,7 @@ async def chat(
     messages: list[dict],
     system: str | None = None,
     model: str | None = None,
-    max_tokens: int = 300,
+    max_tokens: int = 120,
 ) -> str:
     """Unified LLM call via litellm. Works with Anthropic, OpenAI, etc."""
     model = model or settings.llm_model

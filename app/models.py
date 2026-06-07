@@ -26,6 +26,7 @@ class User(SQLModel, table=True):
     email: str
     name: str
     avatar_url: Optional[str] = None
+    age: Optional[int] = None
     persona: Optional[str] = None
     dat_score: Optional[float] = None         # Divergent Association Task score (0-100)
     dat_words: Optional[str] = None           # JSON list of the scored words

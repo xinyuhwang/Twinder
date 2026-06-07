@@ -58,17 +58,15 @@ export interface UserRead {
   name: string;
   email: string;
   avatar_url: string | null;
+  age: number | null;
   persona: string | null;
+  dat_score?: number | null;
 }
 
-export interface RoomRead {
-  id: string;
-  status: string;
-  vibe_score: number | null;
-  vibe_summary: string | null;
-  created_at: string;
-  completed_at: string | null;
-  participants: UserRead[];
+export interface UserUpdate {
+  name?: string;
+  age?: number | null;
+  persona?: string;
 }
 
 export interface MessageRead {
@@ -78,10 +76,4 @@ export interface MessageRead {
   role: string;
   content: string;
   timestamp: string;
-}
-
-export interface MatchmakeResponse {
-  status: string;
-  room_id: string | null;
-  position: number | null;
 }

@@ -14,6 +14,17 @@ from app.redis_client import get_redis
 
 ARENA_TURNS = 8  # 4 exchanges each
 
+_LENGTH_REMINDER = "\n\n[reminder: reply in 1-2 sentences max. short texts only, no lists.]"
+
+
+def _trim_to_sentences(text: str, max_sentences: int = 2) -> str:
+    """Hard-cap a response to max_sentences. Splits on '.', '!', '?' boundaries."""
+    import re
+    text = text.strip()
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    trimmed = " ".join(sentences[:max_sentences])
+    return trimmed
+
 
 def _flip_card_perspective(card: dict, user_a: User, user_b: User) -> dict:
     """Flip a cached match card from the other user's perspective."""
@@ -39,6 +50,8 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
         session.close()
         return []
 
+    # Scope opponents to users in the same event (most recently joined event wins).
+    # Falls back to all users if the requesting user has no event enrollment.
     participant_row = session.exec(
         select(EventParticipant)
         .where(EventParticipant.user_id == user_id)
@@ -108,6 +121,8 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
     persona_a = user_a.persona or f"{user_a.name} — no detailed profile provided yet."
     persona_b = user_b.persona or f"{user_b.name} — no detailed profile provided yet."
 
+    # Fold the divergent-thinking / openness signal into the persona text so
+    # both the agents and the scorer can reason about it.
     line_a = openness_line(user_a.dat_score)
     line_b = openness_line(user_b.dat_score)
     if line_a:
@@ -124,13 +139,23 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
     messages_a: list[dict] = []
     messages_b: list[dict] = []
 
+    def _with_reminder(msgs: list[dict]) -> list[dict]:
+        """Append a length reminder to the last user message to counteract drift."""
+        if not msgs:
+            return msgs
+        out = list(msgs)
+        last = out[-1]
+        if last["role"] == "user":
+            out[-1] = {**last, "content": last["content"] + _LENGTH_REMINDER}
+        return out
+
     for turn in range(ARENA_TURNS):
         if turn % 2 == 0:
             if turn == 0:
-                prompt_msgs = [{"role": "user", "content": TWIN_OPENER.format(mode=mode)}]
+                prompt_msgs = [{"role": "user", "content": TWIN_OPENER.format(mode=mode) + _LENGTH_REMINDER}]
             else:
-                prompt_msgs = messages_a
-            content = await chat(messages=prompt_msgs, system=system_a)
+                prompt_msgs = _with_reminder(messages_a)
+            content = _trim_to_sentences(await chat(messages=prompt_msgs, system=system_a))
 
             messages_a.append({"role": "assistant", "content": content})
             messages_b.append({"role": "user", "content": content})
@@ -142,8 +167,8 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
                 "turn": str(turn),
             })
         else:
-            prompt_msgs = messages_b
-            content = await chat(messages=prompt_msgs, system=system_b)
+            prompt_msgs = _with_reminder(messages_b)
+            content = _trim_to_sentences(await chat(messages=prompt_msgs, system=system_b))
 
             messages_b.append({"role": "assistant", "content": content})
             messages_a.append({"role": "user", "content": content})
@@ -184,6 +209,7 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str) -> dict:
             "common_interests": [],
         }
 
+    # Blend in openness compatibility (similarity of divergent-thinking scores).
     compat = openness_compatibility(user_a.dat_score, user_b.dat_score)
     if compat is not None:
         base_score = float(match_card.get("score", 50))

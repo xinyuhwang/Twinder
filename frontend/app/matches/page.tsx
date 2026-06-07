@@ -14,7 +14,6 @@ import {
   MessageCircle,
   ChevronRight,
   Trophy,
-  Radio,
 } from 'lucide-react';
 
 function ScoreBadge({ score }: { score: number }) {
@@ -109,9 +108,9 @@ function SwipeCard({
           </div>
         </div>
 
-        <div className="px-5 pb-3 flex-1 space-y-3 overflow-hidden">
+        <div className="px-5 pb-3 flex-1 space-y-3 overflow-y-auto">
           <p className="text-sm font-semibold text-violet-300 leading-snug">{card.headline}</p>
-          <p className="text-sm text-zinc-400 leading-relaxed line-clamp-3">{card.summary}</p>
+          <p className="text-sm text-zinc-400 leading-relaxed">{card.summary}</p>
 
           {(card.tip || card.suggested_opener) && (
             <div className="p-3 rounded-2xl bg-zinc-800/60 border border-zinc-700/50">
@@ -366,16 +365,6 @@ export default function Matches() {
                   View saved ({savedIds.length})
                 </button>
               )}
-              <button
-                onClick={() => router.push('/live')}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-6 py-3 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/20"
-              >
-                <Radio className="h-4 w-4" />
-                Try a live conversation
-              </button>
-              <p className="text-xs text-zinc-600">
-                Live pairs you one-on-one in real time. Arena ranks everyone at once.
-              </p>
             </div>
           </div>
         )}

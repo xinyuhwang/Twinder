@@ -9,12 +9,14 @@ class UserRead(BaseModel):
     name: str
     email: str
     avatar_url: Optional[str] = None
+    age: Optional[int] = None
     persona: Optional[str] = None
     dat_score: Optional[float] = None
 
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
+    age: Optional[int] = None
     persona: Optional[str] = None
 
 

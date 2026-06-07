@@ -370,7 +370,7 @@ def build_system_instruction(synthesis: dict, name: str) -> str:
     if spark:
         parts.append(f"\nTopics likely to create spark:\n{spark}")
 
-    parts.append("\nKeep responses conversational and natural (2-4 sentences). Never claim credentials the user doesn't have. Never reveal sensitive or internal-only profile information.")
+    parts.append("\nKeep responses short and conversational — 3 sentences or fewer, like texting. Never claim credentials the user doesn't have. Never reveal sensitive or internal-only profile information.")
 
     return "\n".join(parts)
 

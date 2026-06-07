@@ -18,6 +18,8 @@ const KEY = {
   metMatchIds: 'twinder_met_match_ids',
   seenSwipeHint: 'twinder_seen_swipe_hint',
   theme: 'twinder_theme',
+  preflightQuestions: 'twinder_preflight_questions',
+  preflightProfileYaml: 'twinder_preflight_profile_yaml',
 };
 
 function getJson<T>(key: string): T | null {
@@ -100,6 +102,16 @@ export const localStore = {
     typeof window !== 'undefined' && localStorage.getItem(KEY.seenSwipeHint) === 'true',
   setSeenSwipeHint: (v: boolean) =>
     localStorage.setItem(KEY.seenSwipeHint, v ? 'true' : 'false'),
+
+  getPreflightQuestions: (): string[] | null => getJson<string[]>(KEY.preflightQuestions),
+  setPreflightQuestions: (v: string[]) => setJson(KEY.preflightQuestions, v),
+  getPreflightProfileYaml: (): string | null =>
+    typeof window !== 'undefined' ? localStorage.getItem(KEY.preflightProfileYaml) : null,
+  setPreflightProfileYaml: (v: string) => localStorage.setItem(KEY.preflightProfileYaml, v),
+  clearPreflightData: () => {
+    localStorage.removeItem(KEY.preflightQuestions);
+    localStorage.removeItem(KEY.preflightProfileYaml);
+  },
 
   reset: () => {
     Object.entries(KEY).forEach(([name, k]) => {

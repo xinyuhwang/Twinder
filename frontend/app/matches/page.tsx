@@ -14,7 +14,9 @@ import {
   MessageCircle,
   ChevronRight,
   Trophy,
+  Sparkles,
 } from 'lucide-react';
+import { sanitizeSummary } from '@/lib/sanitize';
 
 function ScoreBadge({ score }: { score: number }) {
   const color =
@@ -32,6 +34,7 @@ function ScoreBadge({ score }: { score: number }) {
 function SwipeCard({
   card,
   isTop,
+  isTopPick,
   onPass,
   onSave,
   onMeet,
@@ -41,6 +44,7 @@ function SwipeCard({
 }: {
   card: MatchCard;
   isTop: boolean;
+  isTopPick: boolean;
   onPass: () => void;
   onSave: () => void;
   onMeet: () => void;
@@ -69,7 +73,15 @@ function SwipeCard({
       onDragEnd={handleDragEnd}
       className={`absolute inset-0 cursor-grab active:cursor-grabbing select-none ${isTop ? 'z-10' : 'z-0'}`}
     >
-      <div className="h-full rounded-3xl bg-surface border border-border overflow-hidden flex flex-col shadow-xl">
+      <div className={`h-full rounded-3xl bg-surface overflow-hidden flex flex-col shadow-xl ${card.score >= 80 ? 'border-2 border-success/40 shadow-success/10' : 'border border-border'}`}>
+        {isTopPick && (
+          <div className="px-5 pt-3 pb-0">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+              <Trophy className="w-3 h-3" />
+              Your twin&apos;s top pick
+            </span>
+          </div>
+        )}
         {isTop && (
           <>
             <motion.div
@@ -110,7 +122,7 @@ function SwipeCard({
 
         <div className="px-5 pb-3 flex-1 space-y-3 overflow-y-auto">
           <p className="text-sm font-semibold text-secondary leading-snug">{card.headline}</p>
-          <p className="text-sm text-muted leading-relaxed">{card.summary}</p>
+          <p className="text-sm text-muted leading-relaxed">{sanitizeSummary(card.summary, card.opponent_name)}</p>
 
           {(card.tip || card.suggested_opener) && (
             <div className="p-3 rounded-2xl bg-surface-2/60 border border-border-strong/50">
@@ -130,11 +142,21 @@ function SwipeCard({
           )}
         </div>
 
+        <div className="px-5 pb-2 flex justify-center">
+          <button
+            onClick={onOpen}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-accent/10 text-accent-muted border border-accent/20 hover:bg-accent/20 transition-colors"
+          >
+            <Sparkles className="w-3 h-3" />
+            Ask my agent why
+          </button>
+        </div>
+
         <button
           onClick={onOpen}
           className="mx-5 mb-3 flex items-center justify-center gap-1.5 py-2 text-xs text-subtle hover:text-accent transition-colors"
         >
-          Watch agent conversation
+          See full details
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
 
@@ -167,7 +189,7 @@ function SwipeHintOverlay({ onDismiss }: { onDismiss: () => void }) {
       <div className="w-full space-y-4 rounded-2xl border border-border-strong bg-surface p-5 text-center">
         <p className="text-lg font-semibold text-primary">Swipe to decide</p>
         <p className="text-sm text-muted">
-          Swipe right to save, left to pass. Tap the card for full details and to ask your agent why.
+          Swipe right to save, left to pass. Tap the card for full details.
         </p>
         <button
           onClick={onDismiss}
@@ -303,7 +325,7 @@ export default function Matches() {
           <div className="space-y-0.5">
             <h1 className="text-2xl font-bold text-primary">Your matches</h1>
             <p className="text-subtle text-sm">
-              {cards.length} agents ranked by your twin
+              {cards.length} {cards.length === 1 ? 'agent' : 'agents'} ranked by your twin
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-subtle">
@@ -328,12 +350,13 @@ export default function Matches() {
                 key={activeCard.opponent_id}
                 card={activeCard}
                 isTop
+                isTopPick={currentIndex === 0 && cards.length > 0 && activeCard.opponent_id === cards[0].opponent_id}
                 saved={savedIds.includes(activeCard.opponent_id)}
                 met={metIds.includes(activeCard.opponent_id)}
                 onPass={() => handlePass(activeCard.opponent_id)}
                 onSave={() => handleSave(activeCard.opponent_id)}
                 onMeet={() => handleMeet(activeCard)}
-                onOpen={() => router.push(`/matches/${activeCard.opponent_id}/chat`)}
+                onOpen={() => router.push(`/matches/${activeCard.opponent_id}`)}
               />
             </AnimatePresence>
             {showSwipeHint && <SwipeHintOverlay onDismiss={dismissSwipeHint} />}

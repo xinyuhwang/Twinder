@@ -78,10 +78,20 @@ class ArenaStatusResponse(BaseModel):
     count: int = 0
 
 
+class PreflightRequest(BaseModel):
+    raw_context: str
+
+
+class PreflightResponse(BaseModel):
+    questions: list[str]
+    profile_yaml: str
+
+
 class IntakeRequest(BaseModel):
     raw_context: str
     answers: dict | None = None
     mode: str = "networking"
+    profile_yaml: str | None = None
 
 
 class DatRequest(BaseModel):

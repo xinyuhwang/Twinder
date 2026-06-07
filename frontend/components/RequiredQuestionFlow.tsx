@@ -23,25 +23,36 @@ export const REQUIRED_QUESTIONS: FlowQuestion[] = [
     id: 'event_goals',
     text: 'What do you want from this event, and what should people know about you?',
   },
+  {
+    id: 'belief_changed',
+    text: "What's something you were completely wrong about that changed how you think?",
+  },
+  {
+    id: 'help_others',
+    text: 'When someone around you is struggling, what do you actually do?',
+  },
 ];
 
 interface RequiredQuestionFlowProps {
   initialAnswers?: Record<string, string>;
   onComplete: (answers: Record<string, string>) => void;
   onFinishEarly?: (answers: Record<string, string>) => void;
+  questions?: FlowQuestion[];
 }
 
 export function RequiredQuestionFlow({
   initialAnswers = {},
   onComplete,
   onFinishEarly,
+  questions,
 }: RequiredQuestionFlowProps) {
+  const questionList = questions ?? REQUIRED_QUESTIONS;
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers);
-  const [input, setInput] = useState(initialAnswers[REQUIRED_QUESTIONS[0]?.id] ?? '');
+  const [input, setInput] = useState(initialAnswers[questionList[0]?.id] ?? '');
 
-  const current = REQUIRED_QUESTIONS[step];
-  const totalSteps = REQUIRED_QUESTIONS.length;
+  const current = questionList[step];
+  const totalSteps = questionList.length;
   const progress = ((step + 1) / totalSteps) * 100;
   const isLast = step >= totalSteps - 1;
 
@@ -53,7 +64,7 @@ export function RequiredQuestionFlow({
     }
     const nextStep = step + 1;
     setStep(nextStep);
-    setInput(nextAnswers[REQUIRED_QUESTIONS[nextStep].id] ?? '');
+    setInput(nextAnswers[questionList[nextStep].id] ?? '');
   }
 
   function handleContinue() {

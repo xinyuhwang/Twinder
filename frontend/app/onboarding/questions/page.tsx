@@ -2,19 +2,38 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MobileShell } from '@/components/MobileShell';
-import { RequiredQuestionFlow } from '@/components/RequiredQuestionFlow';
+import { RequiredQuestionFlow, type FlowQuestion } from '@/components/RequiredQuestionFlow';
 import { localStore } from '@/lib/local-store';
+
+const DAT_QUESTION: FlowQuestion = {
+  id: 'dat',
+  text: 'Quick creativity check: name 10 words as different from each other as possible.',
+  kind: 'dat',
+};
+
+function buildDynamicQuestions(preflightQuestions: string[]): FlowQuestion[] {
+  const textQuestions: FlowQuestion[] = preflightQuestions.map((q, i) => ({
+    id: `q${i + 1}`,
+    text: q,
+  }));
+  return [...textQuestions, DAT_QUESTION];
+}
 
 export default function OnboardingQuestions() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [dynamicQuestions, setDynamicQuestions] = useState<FlowQuestion[] | undefined>(undefined);
 
   useEffect(() => {
     if (!localStore.getToken()) {
       router.replace('/demo');
-    } else {
-      setReady(true);
+      return;
     }
+    const preflight = localStore.getPreflightQuestions();
+    if (preflight && preflight.length > 0) {
+      setDynamicQuestions(buildDynamicQuestions(preflight));
+    }
+    setReady(true);
   }, [router]);
 
   if (!ready) {
@@ -34,7 +53,7 @@ export default function OnboardingQuestions() {
 
   function handleFinishEarly(answers: Record<string, string>) {
     localStore.setOnboardingAnswers(answers);
-    router.push('/arena');
+    router.push('/onboarding/preview');
   }
 
   return (
@@ -51,6 +70,7 @@ export default function OnboardingQuestions() {
           initialAnswers={localStore.getOnboardingAnswers() ?? undefined}
           onComplete={handleComplete}
           onFinishEarly={handleFinishEarly}
+          questions={dynamicQuestions}
         />
       </div>
     </MobileShell>

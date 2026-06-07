@@ -153,7 +153,7 @@ export default function Arena() {
 
   return (
     <MobileShell>
-      <div className="flex flex-col min-h-screen px-6 py-10 gap-6">
+      <div className="flex flex-col min-h-screen px-6 pt-10 pb-28 gap-6">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent-muted text-xs font-medium">
             <Zap className="w-3 h-3" />

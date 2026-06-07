@@ -7,6 +7,11 @@ import type {
   DatResult,
 } from '@/types';
 
+export interface PreflightResponse {
+  questions: string[];
+  profile_yaml: string;
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export type { MessageRead };
@@ -46,7 +51,14 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  intake: (token: string, body: { raw_context: string; answers?: Record<string, string> | null; mode?: string }) =>
+  preflight: (token: string, raw_context: string) =>
+    request<PreflightResponse>('/users/me/preflight', {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ raw_context }),
+    }),
+
+  intake: (token: string, body: { raw_context: string; answers?: Record<string, string> | null; mode?: string; profile_yaml?: string }) =>
     request<TwinPreview>('/users/me/intake', {
       method: 'POST',
       headers: authHeaders(token),

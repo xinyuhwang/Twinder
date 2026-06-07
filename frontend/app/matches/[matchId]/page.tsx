@@ -10,6 +10,7 @@ import { MeetConfirmationScreen } from '@/components/MeetConfirmationScreen';
 import { MobileShell } from '@/components/MobileShell';
 import { DEMO_PERSONAS } from '@/lib/personas';
 import type { MatchCard } from '@/types';
+import { sanitizeSummary } from '@/lib/sanitize';
 import {
   ArrowLeft,
   Copy,
@@ -157,7 +158,7 @@ export default function MatchDetail() {
           {/* Headline */}
           <div className="space-y-2">
             <h1 className="text-xl font-bold text-primary leading-snug">{card.headline}</h1>
-            <p className="text-sm text-muted leading-relaxed">{card.summary}</p>
+            <p className="text-sm text-muted leading-relaxed">{sanitizeSummary(card.summary, card.opponent_name)}</p>
           </div>
 
           {/* Why you should meet */}

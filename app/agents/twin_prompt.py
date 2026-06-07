@@ -3,7 +3,11 @@
 from sqlmodel import Session
 
 from app.agents.dat import openness_line
-from app.agents.profile import _derive_persona, get_active_profile
+from app.agents.profile import (
+    _derive_persona,
+    _rich_scoring_context_from_synthesis,
+    get_active_profile,
+)
 from app.agents.prompts import MODE_GUIDELINES, TWIN_SYSTEM_PROMPT
 from app.agents.synthesis import (
     build_system_instruction,
@@ -26,6 +30,27 @@ def resolve_persona(user: User, session: Session | None = None) -> str:
                 return derived
 
     return f"{user.name} — no detailed profile provided yet."
+
+
+def rich_persona_for_scoring(user: User, session: Session | None = None) -> str:
+    """Rich compatibility context for match card scoring — includes all 4 dimensions.
+
+    Returns a detailed multi-section text that includes personality alignment,
+    values resonance, relational chemistry, and compatibility signals from the
+    synthesized profile. Falls back to persona_with_openness() when no synthesis
+    is available.
+    """
+    if session is not None:
+        pv = get_active_profile(session, user.id)
+        if pv and pv.matching_vector:
+            synthesis = load_synthesis_from_profile_version(pv.matching_vector)
+            if synthesis.get("profile"):
+                ctx = _rich_scoring_context_from_synthesis(synthesis)
+                if ctx:
+                    line = openness_line(user.dat_score)
+                    return f"{ctx}\n\n{line}" if line else ctx
+
+    return persona_with_openness(user, session)
 
 
 def persona_with_openness(user: User, session: Session | None = None) -> str:

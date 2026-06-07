@@ -89,19 +89,32 @@ MATCH_CARD_SCORING_PROMPT = """You are evaluating a short conversation between t
 Their conversation:
 {conversation}
 
-If either profile includes a divergent-thinking / openness score, treat similar scores as a sign of compatible openness to experience (a meaningful compatibility signal) and weigh closely-matched openness positively; mention it in the summary or non_obvious_overlap when notable.
+## Compatibility framework
 
-Generate a match card for {user_a_name} about {user_b_name}. Every arena conversation gets a card in the swipe stack, including weak connections — use the full 0-100 range and do not withhold cards for low scores. Return a JSON object with:
-- "score": 0-100 connection quality score. Be discriminating — not everyone is a 90. Use the full range: 40-60 for weak matches, 60-75 for decent ones, 75-90 for strong ones, 90+ only for exceptional chemistry.
+Score these four dimensions — they predict whether two people will feel real chemistry, not just surface similarity:
+
+1. **Openness synchrony**: Do they seem to have similar curiosity patterns, novelty appetite, and willingness to update their views? If either profile has openness_to_experience scores, treat similar scores as a strong signal. Couples with matched openness show the highest long-term relationship quality.
+
+2. **Values resonance**: Do they seem to share what they care about beyond self-interest? Look for self-transcendence signals (helping others, causes they champion), communal strength (showing up without keeping score), and intrinsic motivation (doing things for their own sake). This is the strongest sustained compatibility predictor.
+
+3. **Language style matching**: Do they communicate in a similar register? Check language_formality scores, humor_density, and emotional_expressiveness if available. Nonconscious language matching predicts initial attraction AND long-term stability — if they naturally matched in tone during the conversation, note it.
+
+4. **Unique relational chemistry**: What would this specific pairing create that neither could replicate with someone else? Look at complementary_traits, useful_tensions, and irreducible_combination signals. This is the "1+1=3" question.
+
+Use profile fields like openness_to_experience, self_transcendence, communal_strength, language_register, resonance_triggers, and irreducible_combination when present — these are explicit compatibility signals, not decoration.
+
+Generate a match card for {user_a_name} about {user_b_name}. Every arena conversation gets a card in the swipe stack, including weak connections — use the full 0-100 range. Return a JSON object with:
+- "score": 0-100 connection quality score. Weight the 4 compatibility dimensions heavily. Use the full range: 40-60 for weak matches, 60-75 for decent ones, 75-90 for strong ones, 90+ only for exceptional chemistry across multiple dimensions.
 - "headline": a punchy 5-10 word headline (e.g. "Fellow climber building AI for biotech"). Make it specific to THESE two people.
 - "match_type": one of "kindred_spirit", "complementary_skills", "shared_mission", "creative_spark", "unexpected_connection"
-- "summary": 2-3 sentences on why they should meet. Be specific — reference actual things from the conversation.
-- "tip": one short, specific action tip for the conversation (e.g. "Ask Priya about spaced repetition systems" — reference something from the actual conversation)
-- "fun_facts": exactly 3 short bullet-style facts about {user_b_name} that would intrigue {user_a_name} (drawn from the conversation and profile — be concrete, not generic)
+- "summary": 2-3 sentences on why they should meet. Reference actual things from the conversation AND from the compatibility dimensions — which dimensions fired?
+- "compatibility_read": one sentence on which of the 4 dimensions showed the most signal (openness synchrony / values resonance / language matching / unique chemistry)
+- "tip": one short, specific action tip (e.g. "Ask Priya about spaced repetition systems" — reference something actual)
+- "fun_facts": exactly 3 short bullet-style facts about {user_b_name} that would intrigue {user_a_name} (concrete, not generic)
 - "strongest_overlap": the most obvious shared interest or value
 - "non_obvious_overlap": a surprising or deeper connection the conversation revealed
-- "complementary_dynamic": how they could specifically help each other
-- "suggested_opener": a natural, specific opening line for when they meet IRL. Reference something from the conversation. (Longer backup option if the human wants a full opener.)
+- "complementary_dynamic": how they could specifically help each other — what does each bring that the other lacks?
+- "suggested_opener": a natural, specific opening line for when they meet IRL
 - "follow_up_questions": 2-3 questions {user_a_name} could ask {user_b_name}
 - "conversation_highlights": 2-3 of the most interesting exchanges (each as {{"speaker": "name", "text": "quote"}})
 - "common_interests": list of shared interests

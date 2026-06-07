@@ -7,7 +7,7 @@ from sqlmodel import select
 
 from app.agents.json_parse import parse_llm_json
 from app.agents.prompts import MATCH_CARD_SCORING_PROMPT, TWIN_OPENER
-from app.agents.twin_prompt import build_twin_system_prompt, persona_with_openness
+from app.agents.twin_prompt import build_twin_system_prompt, persona_with_openness, rich_persona_for_scoring
 from app.database import get_session
 from app.llm import chat
 from app.models import EventParticipant, User
@@ -29,14 +29,16 @@ def _trim_to_sentences(text: str, max_sentences: int = 2) -> str:
 
 def _fallback_match_card(user_a: User, user_b: User, reason: str = "") -> dict:
     """Minimal card so every opponent appears in the stack even if scoring fails."""
-    summary = f"Your twin met {user_b.name}, but we couldn't fully score the conversation."
+    import logging
     if reason:
-        summary = f"{summary} ({reason})"
+        logging.getLogger(__name__).warning(
+            "Arena fallback for %s→%s: %s", user_a.name, user_b.name, reason
+        )
     return {
         "score": 40,
         "headline": f"Met {user_b.name}",
         "match_type": "unexpected_connection",
-        "summary": summary,
+        "summary": f"Your twin met {user_b.name}, but we're still finishing the score. Check back in a moment.",
         "common_interests": [],
         "opponent_id": user_b.id,
         "opponent_name": user_b.name,
@@ -87,6 +89,9 @@ async def run_arena(user_id: int, mode: str = "networking") -> list[dict]:
         opponents = session.exec(select(User).where(User.id.in_(peer_ids))).all()
     else:
         opponents = session.exec(select(User).where(User.id != user_id)).all()
+
+    # Cap at 5 for reliability and demo pacing (avoids rate-limit cascades)
+    opponents = opponents[:5]
 
     if not opponents:
         session.close()
@@ -142,8 +147,8 @@ async def _arena_conversation(user_a: User, user_b: User, mode: str, session) ->
             card = _flip_card_perspective(card, user_a, user_b)
         return card
 
-    persona_a = persona_with_openness(user_a, session)
-    persona_b = persona_with_openness(user_b, session)
+    persona_a = rich_persona_for_scoring(user_a, session)
+    persona_b = rich_persona_for_scoring(user_b, session)
     system_a = build_twin_system_prompt(user_a, mode, session)
     system_b = build_twin_system_prompt(user_b, mode, session)
 

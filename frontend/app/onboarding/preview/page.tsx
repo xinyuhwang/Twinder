@@ -119,10 +119,12 @@ export default function OnboardingPreview() {
           return;
         }
 
+        const preflightProfileYaml = localStore.getPreflightProfileYaml();
         const twin = await api.intake(token!, {
           raw_context: rawContext,
           answers: answers ?? null,
           mode,
+          ...(preflightProfileYaml ? { profile_yaml: preflightProfileYaml } : {}),
         });
         const derived = buildPreviewFromTwinPreview(twin, persona, userName);
         setPreview(derived);

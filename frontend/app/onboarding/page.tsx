@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MobileShell } from '@/components/MobileShell';
 import { localStore } from '@/lib/local-store';
+import { api } from '@/lib/api';
 import {
   Shield,
   Link2,
@@ -54,6 +55,7 @@ export default function OnboardingIntake() {
   const [promptExpanded, setPromptExpanded] = useState(true);
   const [dragOver, setDragOver] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [preflight, setPreflight] = useState(false);
 
   useEffect(() => {
     if (!localStore.getToken()) {
@@ -64,11 +66,12 @@ export default function OnboardingIntake() {
     setMounted(true);
   }, [router]);
 
-  if (!mounted) {
+  if (!mounted || preflight) {
     return (
       <MobileShell>
-        <div className="flex min-h-screen items-center justify-center">
+        <div className="flex min-h-screen flex-col items-center justify-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          {preflight && <p className="text-sm text-subtle">Building your questions…</p>}
         </div>
       </MobileShell>
     );
@@ -105,14 +108,28 @@ export default function OnboardingIntake() {
 
   function chooseQuestions() {
     localStore.clearRawContext();
+    localStore.clearPreflightData();
     localStore.setSkippedIntake(true);
     router.push('/onboarding/questions');
   }
 
-  function proceedWithImport() {
+  async function proceedWithImport() {
     const raw = buildRawContext(links, paste, fileNote);
     localStore.setRawContext(raw);
     localStore.setSkippedIntake(false);
+
+    const token = localStore.getToken();
+    if (token) {
+      setPreflight(true);
+      try {
+        const result = await api.preflight(token, raw);
+        localStore.setPreflightQuestions(result.questions);
+        localStore.setPreflightProfileYaml(result.profile_yaml);
+      } catch {
+        localStore.clearPreflightData();
+      }
+    }
+
     router.push('/onboarding/questions');
   }
 

@@ -1,7 +1,11 @@
 """Seed the database with 9 demo users from the PRD."""
+import json
+
 from app.database import create_db, get_session
-from app.models import User
+from app.models import Event, EventParticipant, User
 from sqlmodel import select
+
+DEFAULT_EVENT_CODE = "HACK-AI-2026"
 
 DEMO_USERS = [
     {
@@ -9,6 +13,8 @@ DEMO_USERS = [
         "email": "alexis@demo.twinder",
         "google_id": "demo-alexis",
         "avatar_url": None,
+        "dat_score": 82.0,
+        "dat_words": ["volcano", "umbrella", "philosophy", "salmon", "gravity", "ceramic", "nostalgia"],
         "persona": """Outdoorsy, chaotic AI engineer and former nomad based in Oakland, CA. Building strange useful things at the edge of AI, real-world industries, and human behavior.
 
 Interests: digital twins, social AI, agent matching, emotionally intelligent software, AI for human connection, rock climbing, adventure travel, fermentation, speculative fiction.
@@ -30,6 +36,8 @@ Wants help with: entrepreneurial pathways, meeting people outside her bubble, bu
         "email": "haley@demo.twinder",
         "google_id": "demo-haley",
         "avatar_url": None,
+        "dat_score": 78.0,
+        "dat_words": ["whisper", "compass", "marble", "tangerine", "loyalty", "tundra", "violin"],
         "persona": """Social and emotional product thinker passionate about making human connection easier and less awkward.
 
 Interests: introverts and social anxiety, human connection design, making networking less awkward, emotionally safe social tools, UX research for vulnerable populations, community building.
@@ -51,6 +59,8 @@ Wants help with: technical implementation, finding builders who care about the s
         "email": "leo@demo.twinder",
         "google_id": "demo-leo",
         "avatar_url": None,
+        "dat_score": 65.0,
+        "dat_words": ["server", "cable", "router", "engine", "battery", "circuit", "antenna"],
         "persona": """Technical builder focused on infrastructure that makes agent-to-agent communication possible.
 
 Interests: agent-to-agent infrastructure, chatrooms and real-time systems, backend architecture, agent orchestration, distributed systems, Redis, WebSockets, developer tools.
@@ -72,6 +82,8 @@ Wants help with: product intuition, UI/UX design, understanding what users actua
         "email": "maya@demo.twinder",
         "google_id": "demo-maya",
         "avatar_url": None,
+        "dat_score": 80.0,
+        "dat_words": ["origami", "thunder", "lavender", "anchor", "rhythm", "glacier", "appetite"],
         "persona": """Product designer and consumer UX thinker obsessed with making AI feel playful, tasteful, and non-creepy.
 
 Interests: playful social apps, dating UX, mobile onboarding design, tasteful AI interfaces, reducing creepiness in social AI, consumer product design, interaction patterns that spark delight.
@@ -93,6 +105,8 @@ Wants help with: technical implementation, backend systems, understanding AI cap
         "email": "jordan@demo.twinder",
         "google_id": "demo-jordan",
         "avatar_url": None,
+        "dat_score": 68.0,
+        "dat_words": ["festival", "ledger", "harbor", "podcast", "sneaker", "campfire", "billboard"],
         "persona": """Go-to-market and community person who builds distribution loops for products people actually want.
 
 Interests: events and community building, creator tools, distribution strategy, launching products inside communities, community-led growth, partnerships, content strategy, internet culture.
@@ -114,6 +128,8 @@ Wants help with: technical product building, understanding what's feasible to bu
         "email": "priya@demo.twinder",
         "google_id": "demo-priya",
         "avatar_url": None,
+        "dat_score": 84.0,
+        "dat_words": ["synapse", "monsoon", "mosaic", "pendulum", "cinnamon", "labyrinth", "sparrow"],
         "persona": """AI researcher and knowledge systems builder exploring how AI can augment human thinking and learning.
 
 Interests: personal knowledge management (PKM), AI memory systems, learning and cognitive augmentation, research workflows, second brains, Obsidian/Roam, knowledge graphs, spaced repetition, AI tutoring.
@@ -135,6 +151,8 @@ Wants help with: product thinking, shipping MVPs, understanding user needs beyon
         "email": "marcus@demo.twinder",
         "google_id": "demo-marcus",
         "avatar_url": None,
+        "dat_score": 72.0,
+        "dat_words": ["newsletter", "rocket", "meadow", "trophy", "espresso", "canyon", "puppet"],
         "persona": """Community-driven indie hacker who builds in public and tells stories about building.
 
 Interests: creator communities, audience building, startup experiments, internet culture, product storytelling, indie hacking, side projects, newsletters, building in public.
@@ -201,7 +219,22 @@ def seed_demo_users():
     create_db()
     session = next(get_session())
 
+    # Upsert the default event
+    event = session.exec(select(Event).where(Event.code == DEFAULT_EVENT_CODE)).first()
+    if not event:
+        event = Event(code=DEFAULT_EVENT_CODE, name="WeaveHacks 4", mode="hackathon")
+        session.add(event)
+        session.commit()
+        session.refresh(event)
+        print(f"  Created event: {DEFAULT_EVENT_CODE}")
+    else:
+        print(f"  Event exists: {DEFAULT_EVENT_CODE}")
+
+    seeded_users = []
     for data in DEMO_USERS:
+        dat_score = data.get("dat_score")
+        dat_words = json.dumps(data.get("dat_words")) if data.get("dat_words") else None
+
         user = session.exec(
             select(User).where(User.google_id == data["google_id"])
         ).first()
@@ -210,12 +243,38 @@ def seed_demo_users():
             user.name = data["name"]
             user.persona = data["persona"]
             user.avatar_url = data.get("avatar_url")
+            user.dat_score = dat_score
+            user.dat_words = dat_words
             print(f"  Updated: {data['name']}")
         else:
-            user = User(**data)
+            user = User(
+                name=data["name"],
+                email=data["email"],
+                google_id=data["google_id"],
+                avatar_url=data.get("avatar_url"),
+                persona=data["persona"],
+                dat_score=dat_score,
+                dat_words=dat_words,
+            )
             print(f"  Created: {data['name']}")
 
         session.add(user)
+        seeded_users.append(user)
+
+    session.commit()
+
+    # Enroll all demo users in the default event (idempotent)
+    for user in seeded_users:
+        session.refresh(user)
+        existing = session.exec(
+            select(EventParticipant).where(
+                EventParticipant.event_id == event.id,
+                EventParticipant.user_id == user.id,
+            )
+        ).first()
+        if not existing:
+            session.add(EventParticipant(event_id=event.id, user_id=user.id))
+            print(f"  Enrolled {user.name} in {DEFAULT_EVENT_CODE}")
 
     session.commit()
     session.close()

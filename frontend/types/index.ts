@@ -11,6 +11,8 @@ export interface MatchCard {
   headline: string;
   match_type: string;
   summary: string;
+  tip?: string | null;
+  fun_facts?: string[];
   strongest_overlap: string | null;
   non_obvious_overlap: string | null;
   complementary_dynamic: string | null;
@@ -32,10 +34,21 @@ export interface ArenaResponse {
   match_cards: MatchCard[];
 }
 
+export interface ArenaStatusResponse {
+  status: string;
+  count: number;
+}
+
 export interface TwinPreview {
   public_safe_summary: string | null;
+  agent_vibe?: string | null;
   looking_for: string[];
   interests: string[];
+  can_help_with?: string[];
+  conversation_bait?: string[];
+  agent_voice?: string | null;
+  completeness_score?: number | null;
+  twin_prompt?: string | null;
 }
 
 export interface DatResult {
@@ -51,17 +64,15 @@ export interface UserRead {
   name: string;
   email: string;
   avatar_url: string | null;
+  age: number | null;
   persona: string | null;
+  dat_score?: number | null;
 }
 
-export interface RoomRead {
-  id: string;
-  status: string;
-  vibe_score: number | null;
-  vibe_summary: string | null;
-  created_at: string;
-  completed_at: string | null;
-  participants: UserRead[];
+export interface UserUpdate {
+  name?: string;
+  age?: number | null;
+  persona?: string;
 }
 
 export interface MessageRead {
@@ -71,10 +82,4 @@ export interface MessageRead {
   role: string;
   content: string;
   timestamp: string;
-}
-
-export interface MatchmakeResponse {
-  status: string;
-  room_id: string | null;
-  position: number | null;
 }

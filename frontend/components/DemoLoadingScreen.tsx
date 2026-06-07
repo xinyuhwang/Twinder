@@ -72,12 +72,12 @@ export function DemoLoadingScreen({ onDone }: DemoLoadingScreenProps) {
       {/* Orbit animation */}
       <div className="relative w-48 h-48">
         <motion.div
-          className="absolute inset-0 rounded-full border border-violet-500/20"
+          className="absolute inset-0 rounded-full border border-accent/20"
           animate={{ rotate: 360 }}
           transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
         />
         <motion.div
-          className="absolute inset-4 rounded-full border border-violet-500/30"
+          className="absolute inset-4 rounded-full border border-accent/30"
           animate={{ rotate: -360 }}
           transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
         />
@@ -86,7 +86,7 @@ export function DemoLoadingScreen({ onDone }: DemoLoadingScreenProps) {
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <Avatar name="You" size="lg" color="bg-violet-600" />
+            <Avatar name="You" size="lg" color="bg-accent-solid" />
           </motion.div>
         </div>
         {previewPersonas.map((p, i) => {
@@ -119,7 +119,7 @@ export function DemoLoadingScreen({ onDone }: DemoLoadingScreenProps) {
         {['ChatGPT', 'Notes', 'GitHub', 'LinkedIn'].map((label, i) => (
           <motion.div
             key={label}
-            className="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-400"
+            className="px-3 py-1.5 rounded-full bg-surface border border-border text-xs text-muted"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 + i * 0.15 }}
@@ -137,7 +137,7 @@ export function DemoLoadingScreen({ onDone }: DemoLoadingScreenProps) {
               key="ready"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-lg font-semibold text-emerald-400"
+              className="text-lg font-semibold text-success-fg"
             >
               Twin ready.
             </motion.p>
@@ -148,7 +148,7 @@ export function DemoLoadingScreen({ onDone }: DemoLoadingScreenProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3 }}
-              className="text-sm text-zinc-400"
+              className="text-sm text-muted"
             >
               {INGESTION_MESSAGES[messageIndex]}
             </motion.p>
@@ -158,14 +158,14 @@ export function DemoLoadingScreen({ onDone }: DemoLoadingScreenProps) {
 
       {/* Progress bar */}
       <div className="w-full max-w-xs space-y-2">
-        <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+        <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-violet-600 to-pink-500"
+            className="h-full rounded-full bg-gradient-to-r from-accent-solid to-aura-blush"
             style={{ width: `${progress}%` }}
             transition={{ duration: 0.1 }}
           />
         </div>
-        <p className="text-xs text-zinc-600 text-center">
+        <p className="text-xs text-subtle text-center">
           {ready ? 'Ready to continue' : 'Building your twin...'}
         </p>
       </div>
@@ -173,7 +173,7 @@ export function DemoLoadingScreen({ onDone }: DemoLoadingScreenProps) {
       {!ready && (
         <button
           onClick={finish}
-          className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+          className="text-xs text-subtle hover:text-muted transition-colors"
         >
           Skip
         </button>

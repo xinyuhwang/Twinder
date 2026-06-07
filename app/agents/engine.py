@@ -3,8 +3,8 @@ import json
 import uuid
 from datetime import datetime, timezone
 
-from app.agents.profile import get_active_profile
-from app.agents.prompts import MODE_GUIDELINES, TWIN_OPENER, TWIN_SYSTEM_PROMPT
+from app.agents.prompts import TWIN_OPENER
+from app.agents.twin_prompt import build_twin_system_prompt
 from app.database import get_session
 from app.llm import chat
 from app.models import Room, RoomParticipant, User
@@ -50,15 +50,7 @@ async def run_conversation(room_id: str):
     # Build system prompts for each agent
     system_prompts = {}
     for user in users:
-        pv = get_active_profile(session, user.id)
-        if pv and pv.system_instruction:
-            system_prompts[user.id] = pv.system_instruction
-        else:
-            persona = user.persona or f"{user.name} — no detailed profile provided yet."
-            system_prompts[user.id] = TWIN_SYSTEM_PROMPT.format(
-                name=user.name, persona=persona,
-                mode_guidelines=MODE_GUIDELINES.get("networking", MODE_GUIDELINES["networking"]),
-            )
+        system_prompts[user.id] = build_twin_system_prompt(user, "networking", session)
 
     turn_order = [users[0], users[1]]
     is_first_message = True
@@ -149,15 +141,7 @@ async def respond_as_agent(room_id: str, agent_user_id: int):
     ))
     users = [session.get(User, p.user_id) for p in participants if session.get(User, p.user_id)]
 
-    pv = get_active_profile(session, user.id)
-    if pv and pv.system_instruction:
-        system = pv.system_instruction
-    else:
-        persona = user.persona or f"{user.name} — no detailed profile provided yet."
-        system = TWIN_SYSTEM_PROMPT.format(
-            name=user.name, persona=persona,
-            mode_guidelines=MODE_GUIDELINES.get("networking", MODE_GUIDELINES["networking"]),
-        )
+    system = build_twin_system_prompt(user, "networking", session)
 
     conversation = await _build_messages(room_id, agent_user_id, users, False)
 

@@ -17,18 +17,18 @@ export function GoogleAuthGate({
   return (
     <MobileShell>
       <div className="flex flex-col min-h-screen px-6 py-10 items-center justify-center gap-8 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-          <Shield className="w-8 h-8 text-violet-400" />
+        <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center">
+          <Shield className="w-8 h-8 text-accent" />
         </div>
 
         <div className="space-y-2 max-w-xs">
-          <h1 className="text-2xl font-bold text-white">{title}</h1>
-          <p className="text-sm text-zinc-500 leading-relaxed">{description}</p>
+          <h1 className="text-2xl font-bold text-primary">{title}</h1>
+          <p className="text-sm text-subtle leading-relaxed">{description}</p>
         </div>
 
         <button
           onClick={() => startGoogleAuth(returnTo)}
-          className="w-full max-w-xs py-4 rounded-2xl bg-white text-zinc-900 font-semibold text-base hover:bg-zinc-100 transition-colors flex items-center justify-center gap-3"
+          className="w-full max-w-xs py-4 rounded-2xl bg-[#ffffff] text-[#1f2527] font-semibold text-base hover:bg-[#f4f4f5] transition-colors flex items-center justify-center gap-3"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -53,7 +53,7 @@ export function GoogleAuthGate({
 
         <a
           href="/demo"
-          className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-subtle hover:text-secondary transition-colors"
         >
           <Zap className="w-4 h-4" />
           Try the demo instead

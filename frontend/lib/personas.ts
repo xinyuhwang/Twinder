@@ -24,7 +24,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     role: 'Social / emotional product thinker',
     tagline: 'Making networking less painful, one emotionally aware product at a time.',
     persona: 'Social product thinker. Making networking less awkward for introverts. Emotionally safe social tools. Looking for thoughtful builders and people interested in social UX.',
-    avatarColor: 'bg-emerald-500',
+    avatarColor: 'bg-success',
     avatarInitials: 'HA',
   },
   {
@@ -60,7 +60,7 @@ export const DEMO_PERSONAS: DemoPersona[] = [
     role: 'AI researcher, knowledge systems',
     tagline: 'Building tools that help people think better, not just faster.',
     persona: 'AI researcher. Personal knowledge management, AI memory, cognitive augmentation. Looking for product builders and people obsessed with learning.',
-    avatarColor: 'bg-violet-500',
+    avatarColor: 'bg-accent',
     avatarInitials: 'PR',
   },
   {

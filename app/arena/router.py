@@ -1,38 +1,49 @@
-import asyncio
 import json
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 
 from app.deps import get_current_user
 from app.models import User
 from app.redis_client import get_redis
-from app.schemas import ArenaResponse, MatchCard, MessageRead
+from app.schemas import ArenaResponse, ArenaStatusResponse, MatchCard, MessageRead
 
 router = APIRouter(prefix="/arena", tags=["arena"])
 
 
 @router.post("/start", response_model=ArenaResponse)
 async def start_arena(
+    background_tasks: BackgroundTasks,
     mode: str = Query(default="networking", description="Event mode: networking, hackathon, dating, custom"),
     user: User = Depends(get_current_user),
 ):
-    """Start an arena session: user's agent meets all other agents in short conversations."""
+    """Start an arena session in the background; poll /results for incremental cards."""
     from app.agents.arena import run_arena
 
-    # Run arena (this may take 30-60s with multiple LLM calls)
-    match_cards = await run_arena(user.id, mode=mode)
-
     r = get_redis()
-    arena_data = await r.get(f"arena:{user.id}:latest")
-    arena_id = None
-    if arena_data:
-        arena_id = json.loads(arena_data).get("arena_id")
-
-    return ArenaResponse(
-        status="completed",
-        arena_id=arena_id,
-        match_cards=[MatchCard(**mc) for mc in match_cards],
+    arena_id = str(uuid.uuid4())
+    await r.set(
+        f"arena:{user.id}:latest",
+        json.dumps({"arena_id": arena_id, "match_cards": []}),
+        ex=3600,
     )
+    await r.set(f"arena:{user.id}:status", "running", ex=3600)
+    background_tasks.add_task(run_arena, user.id, mode)
+    return ArenaResponse(status="running", arena_id=arena_id, match_cards=[])
+
+
+@router.get("/status", response_model=ArenaStatusResponse)
+async def get_arena_status(user: User = Depends(get_current_user)):
+    """Check whether the arena run is still in progress."""
+    r = get_redis()
+    status = await r.get(f"arena:{user.id}:status")
+    arena_data = await r.get(f"arena:{user.id}:latest")
+    count = 0
+    if arena_data:
+        count = len(json.loads(arena_data).get("match_cards", []))
+    if not status and arena_data:
+        status = "completed"
+    return ArenaStatusResponse(status=status or "completed", count=count)
 
 
 @router.get("/results", response_model=ArenaResponse)
@@ -43,9 +54,10 @@ async def get_arena_results(user: User = Depends(get_current_user)):
     if not arena_data:
         raise HTTPException(status_code=404, detail="No arena results found. Start an arena first.")
 
+    status = await r.get(f"arena:{user.id}:status") or "completed"
     data = json.loads(arena_data)
     return ArenaResponse(
-        status="completed",
+        status=status,
         arena_id=data.get("arena_id"),
         match_cards=[MatchCard(**mc) for mc in data.get("match_cards", [])],
     )

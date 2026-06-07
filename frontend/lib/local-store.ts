@@ -6,7 +6,6 @@ const KEY = {
   userId: 'twinder_user_id',
   userName: 'twinder_user_name',
   personaId: 'twinder_persona_id',
-  currentRoomId: 'twinder_current_room_id',
   eventMode: 'twinder_event_mode',
   eventCode: 'twinder_event_code',
   rawContext: 'twinder_raw_context',
@@ -17,6 +16,10 @@ const KEY = {
   savedMatchIds: 'twinder_saved_match_ids',
   passedMatchIds: 'twinder_passed_match_ids',
   metMatchIds: 'twinder_met_match_ids',
+  seenSwipeHint: 'twinder_seen_swipe_hint',
+  theme: 'twinder_theme',
+  preflightQuestions: 'twinder_preflight_questions',
+  preflightProfileYaml: 'twinder_preflight_profile_yaml',
 };
 
 function getJson<T>(key: string): T | null {
@@ -55,9 +58,6 @@ export const localStore = {
 
   getPersonaId: () => typeof window !== 'undefined' ? localStorage.getItem(KEY.personaId) : null,
   setPersonaId: (v: string) => localStorage.setItem(KEY.personaId, v),
-
-  getCurrentRoomId: () => typeof window !== 'undefined' ? localStorage.getItem(KEY.currentRoomId) : null,
-  setCurrentRoomId: (v: string) => localStorage.setItem(KEY.currentRoomId, v),
 
   getEventMode: (): EventMode => {
     const v = typeof window !== 'undefined' ? localStorage.getItem(KEY.eventMode) : null;
@@ -98,7 +98,25 @@ export const localStore = {
   getMetMatchIds: (): number[] => getJson<number[]>(KEY.metMatchIds) ?? [],
   setMetMatchIds: (v: number[]) => setJson(KEY.metMatchIds, v),
 
+  getSeenSwipeHint: (): boolean =>
+    typeof window !== 'undefined' && localStorage.getItem(KEY.seenSwipeHint) === 'true',
+  setSeenSwipeHint: (v: boolean) =>
+    localStorage.setItem(KEY.seenSwipeHint, v ? 'true' : 'false'),
+
+  getPreflightQuestions: (): string[] | null => getJson<string[]>(KEY.preflightQuestions),
+  setPreflightQuestions: (v: string[]) => setJson(KEY.preflightQuestions, v),
+  getPreflightProfileYaml: (): string | null =>
+    typeof window !== 'undefined' ? localStorage.getItem(KEY.preflightProfileYaml) : null,
+  setPreflightProfileYaml: (v: string) => localStorage.setItem(KEY.preflightProfileYaml, v),
+  clearPreflightData: () => {
+    localStorage.removeItem(KEY.preflightQuestions);
+    localStorage.removeItem(KEY.preflightProfileYaml);
+  },
+
   reset: () => {
-    Object.values(KEY).forEach(k => localStorage.removeItem(k));
+    Object.entries(KEY).forEach(([name, k]) => {
+      if (name === 'theme') return;
+      localStorage.removeItem(k);
+    });
   },
 };

@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,10 +7,11 @@ from sqlmodel import Session, select
 
 from app.database import get_session
 from app.deps import get_current_user
-from app.models import Room, RoomParticipant, User
+from app.models import MatchFeedback, Room, RoomParticipant, User
+from app.observability import add_call_feedback
 from app.redis_client import get_redis
 from app.rooms.matchmaker import check_match_status, create_room_in_db, enqueue_user
-from app.schemas import MatchmakeResponse, MessageRead, RoomRead, UserRead
+from app.schemas import FeedbackIn, MatchmakeResponse, MessageRead, RoomRead, UserRead
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
@@ -57,6 +59,21 @@ async def matchmake_status(user: User = Depends(get_current_user)):
     return MatchmakeResponse(**result)
 
 
+def _room_read(room: Room, session) -> RoomRead:
+    """Build a RoomRead, parsing the JSON match_card string into a dict."""
+    participants = session.exec(
+        select(RoomParticipant).where(RoomParticipant.room_id == room.id)
+    ).all()
+    users = [session.get(User, p.user_id) for p in participants]
+    data = room.model_dump()
+    data["match_card"] = json.loads(data["match_card"]) if data.get("match_card") else None
+    data.pop("match_card_call_id", None)
+    return RoomRead(
+        **data,
+        participants=[UserRead.model_validate(u, from_attributes=True) for u in users if u],
+    )
+
+
 @router.get("", response_model=list[RoomRead])
 async def list_rooms(
     user: User = Depends(get_current_user),
@@ -65,19 +82,8 @@ async def list_rooms(
     participant_rooms = session.exec(
         select(RoomParticipant).where(RoomParticipant.user_id == user.id)
     ).all()
-    rooms = []
-    for rp in participant_rooms:
-        room = session.get(Room, rp.room_id)
-        if room:
-            participants = session.exec(
-                select(RoomParticipant).where(RoomParticipant.room_id == room.id)
-            ).all()
-            users = [session.get(User, p.user_id) for p in participants]
-            rooms.append(RoomRead(
-                **room.model_dump(),
-                participants=[UserRead.model_validate(u, from_attributes=True) for u in users if u],
-            ))
-    return rooms
+    return [_room_read(room, session) for rp in participant_rooms
+            if (room := session.get(Room, rp.room_id))]
 
 
 @router.get("/{room_id}", response_model=RoomRead)
@@ -89,15 +95,7 @@ async def get_room(
     room = session.get(Room, room_id)
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
-
-    participants = session.exec(
-        select(RoomParticipant).where(RoomParticipant.room_id == room_id)
-    ).all()
-    users = [session.get(User, p.user_id) for p in participants]
-    return RoomRead(
-        **room.model_dump(),
-        participants=[UserRead.model_validate(u, from_attributes=True) for u in users if u],
-    )
+    return _room_read(room, session)
 
 
 @router.get("/{room_id}/messages", response_model=list[MessageRead])
@@ -174,5 +172,42 @@ async def complete_room(
     from app.agents.scorer import score_conversation
 
     asyncio.create_task(score_conversation(room_id))
+
+    return {"ok": True}
+
+
+@router.post("/{room_id}/feedback")
+async def submit_feedback(
+    room_id: str,
+    body: FeedbackIn,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    participant = session.exec(
+        select(RoomParticipant).where(
+            RoomParticipant.room_id == room_id,
+            RoomParticipant.user_id == user.id,
+        )
+    ).first()
+    if not participant:
+        raise HTTPException(status_code=403, detail="Not a participant")
+
+    session.add(MatchFeedback(
+        room_id=room_id,
+        user_id=user.id,
+        verdict=body.verdict,
+        rating=body.rating,
+        note=body.note,
+    ))
+
+    room = session.get(Room, room_id)
+    session.commit()
+
+    add_call_feedback(
+        room.match_card_call_id if room else None,
+        body.verdict,
+        body.rating,
+        body.note,
+    )
 
     return {"ok": True}

@@ -1,17 +1,20 @@
 import type {
   UserRead,
-  RoomRead,
+  UserUpdate,
   MessageRead,
-  MatchmakeResponse,
   TwinPreview,
   ArenaResponse,
   DatResult,
 } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const WS_BASE = API_BASE.replace(/^http/, 'ws');
+export interface PreflightResponse {
+  questions: string[];
+  profile_yaml: string;
+}
 
-export type { RoomRead, MessageRead };
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+export type { MessageRead };
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -41,43 +44,30 @@ export const api = {
   getMe: (token: string) =>
     request<UserRead>('/auth/me', { headers: authHeaders(token) }),
 
-  matchmake: (token: string) =>
-    request<MatchmakeResponse>('/rooms/matchmake', {
+  updateMe: (token: string, body: UserUpdate) =>
+    request<UserRead>('/users/me', {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify(body),
+    }),
+
+  preflight: (token: string, raw_context: string) =>
+    request<PreflightResponse>('/users/me/preflight', {
       method: 'POST',
       headers: authHeaders(token),
+      body: JSON.stringify({ raw_context }),
     }),
 
-  matchmakeStatus: (token: string) =>
-    request<MatchmakeResponse>('/rooms/matchmake/status', {
-      headers: authHeaders(token),
-    }),
-
-  getRoom: (token: string, roomId: string) =>
-    request<RoomRead>(`/rooms/${roomId}`, { headers: authHeaders(token) }),
-
-  getMessages: (token: string, roomId: string) =>
-    request<MessageRead[]>(`/rooms/${roomId}/messages`, { headers: authHeaders(token) }),
-
-  takeover: (token: string, roomId: string) =>
-    request<{ ok: boolean }>(`/rooms/${roomId}/takeover`, {
-      method: 'POST',
-      headers: authHeaders(token),
-    }),
-
-  completeRoom: (token: string, roomId: string) =>
-    request<{ ok: boolean }>(`/rooms/${roomId}/complete`, {
-      method: 'POST',
-      headers: authHeaders(token),
-    }),
-
-  wsUrl: (roomId: string, token: string) =>
-    `${WS_BASE}/ws/rooms/${roomId}?token=${token}`,
-
-  intake: (token: string, body: { raw_context: string; answers?: Record<string, string> | null }) =>
+  intake: (token: string, body: { raw_context: string; answers?: Record<string, string> | null; mode?: string; profile_yaml?: string }) =>
     request<TwinPreview>('/users/me/intake', {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify(body),
+    }),
+
+  getTwinPrompt: (token: string, mode: string) =>
+    request<{ mode: string; twin_prompt: string }>(`/users/me/twin-prompt?mode=${encodeURIComponent(mode)}`, {
+      headers: authHeaders(token),
     }),
 
   dat: (token: string, words: string[]) =>
@@ -95,6 +85,9 @@ export const api = {
 
   getArenaResults: (token: string) =>
     request<ArenaResponse>('/arena/results', { headers: authHeaders(token) }),
+
+  getArenaStatus: (token: string) =>
+    request<{ status: string; count: number }>('/arena/status', { headers: authHeaders(token) }),
 
   getArenaConversation: (token: string, conversationId: string) =>
     request<MessageRead[]>(`/arena/conversation/${encodeURIComponent(conversationId)}`, {

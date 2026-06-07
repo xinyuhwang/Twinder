@@ -28,7 +28,7 @@ function AuthCallbackInner() {
   }, [params, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-zinc-400">
+    <div className="min-h-screen flex items-center justify-center text-muted">
       Signing in...
     </div>
   );
@@ -36,7 +36,7 @@ function AuthCallbackInner() {
 
 export default function AuthCallback() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-zinc-400">Signing in...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-muted">Signing in...</div>}>
       <AuthCallbackInner />
     </Suspense>
   );

@@ -26,9 +26,22 @@ async function submitDatInBackground(token: string, datWordsCsv: string) {
   }
 }
 
+async function syncPersonaIfEmpty(token: string, personaText: string) {
+  const trimmed = personaText.trim();
+  if (!trimmed) return;
+  try {
+    const me = await api.getMe(token);
+    if (me.persona?.trim()) return;
+    await api.updateMe(token, { persona: trimmed });
+  } catch {
+    // Non-blocking — arena still works if this fails.
+  }
+}
+
 export default function OnboardingPreview() {
   const router = useRouter();
   const [preview, setPreview] = useState<AgentPreviewDisplay | null>(null);
+  const [twinPrompt, setTwinPrompt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,12 +56,19 @@ export default function OnboardingPreview() {
     const answers = localStore.getOnboardingAnswers();
     const hasAnswers = answers && Object.values(answers).some(v => v.trim());
     const hasInput = Boolean(rawContext) || Boolean(hasAnswers);
-    const persona = DEMO_PERSONAS.find(p => p.id === localStore.getPersonaId()) ?? DEMO_PERSONAS[0];
+    const personaId = localStore.getPersonaId();
+    const persona = personaId ? (DEMO_PERSONAS.find(p => p.id === personaId) ?? null) : null;
     const userName = localStore.getUserName();
+    const mode = localStore.getEventMode();
 
-    // Fire DAT scoring in the background as soon as we have words.
-    if (token && answers?.dat) {
-      submitDatInBackground(token, answers.dat);
+    async function loadTwinPrompt() {
+      try {
+        const result = await api.getTwinPrompt(token!, mode);
+        setTwinPrompt(result.twin_prompt);
+        return result.twin_prompt;
+      } catch {
+        return null;
+      }
     }
 
     async function load() {
@@ -58,26 +78,32 @@ export default function OnboardingPreview() {
         if (cached) {
           const derived = buildPreviewFromTwinPreview(cached, persona, userName);
           setPreview(derived);
+          if (cached.twin_prompt) {
+            setTwinPrompt(cached.twin_prompt);
+          } else {
+            await loadTwinPrompt();
+          }
           setLoading(false);
           return;
         }
 
         if (!hasInput) {
           // Fully skipped — no input at all. Build from persona only.
-          const derived = buildPreviewFromPersona(persona, userName);
+          const derived = buildPreviewFromPersona(persona ?? DEMO_PERSONAS[0], userName);
           setPreview(derived);
+          await syncPersonaIfEmpty(token!, derived.summary);
+          const prompt = await loadTwinPrompt();
           localStore.setTwinPreview({
             public_safe_summary: derived.summary,
             looking_for: derived.lookingFor,
             interests: derived.interests,
+            twin_prompt: prompt,
           });
           setLoading(false);
           return;
         }
 
         if (!rawContext && hasAnswers) {
-          // Answers only, no pasted context — await intake so the flavored
-          // synthesis result is what appears (no generic flash, then swap).
           const answerText = Object.entries(answers!)
             .filter(([, v]) => v.trim())
             .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
@@ -85,46 +111,60 @@ export default function OnboardingPreview() {
           const twin = await api.intake(token!, {
             raw_context: answerText,
             answers: answers ?? null,
+            mode,
           });
           const derived = buildPreviewFromTwinPreview(twin, persona, userName);
           setPreview(derived);
+          setTwinPrompt(twin.twin_prompt ?? null);
           localStore.setTwinPreview(twin);
           return;
         }
 
-        // Has pasted context (possibly with answers too)
+        const preflightProfileYaml = localStore.getPreflightProfileYaml();
         const twin = await api.intake(token!, {
           raw_context: rawContext,
           answers: answers ?? null,
+          mode,
+          ...(preflightProfileYaml ? { profile_yaml: preflightProfileYaml } : {}),
         });
         const derived = buildPreviewFromTwinPreview(twin, persona, userName);
         setPreview(derived);
+        setTwinPrompt(twin.twin_prompt ?? null);
         localStore.setTwinPreview(twin);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not build twin preview. Is the backend running?');
-        const fallback = buildPreviewFromPersona(persona, userName);
+        const fallback = buildPreviewFromPersona(persona ?? DEMO_PERSONAS[0], userName);
         setPreview(fallback);
         localStore.setTwinPreview({
           public_safe_summary: fallback.summary,
           looking_for: fallback.lookingFor,
           interests: fallback.interests,
         });
+        await syncPersonaIfEmpty(token!, fallback.summary);
+        await loadTwinPrompt();
       } finally {
         setLoading(false);
       }
     }
 
     load();
+
+    if (token && answers?.dat) {
+      submitDatInBackground(token, answers.dat);
+    }
   }, [router]);
 
-  function handleApprove() {
-    if (preview) {
+  async function handleApprove() {
+    const token = localStore.getToken();
+    if (preview && token) {
       const twin: TwinPreview = {
         public_safe_summary: preview.summary,
         looking_for: preview.lookingFor,
         interests: preview.interests,
+        twin_prompt: twinPrompt,
       };
       localStore.setTwinPreview(twin);
+      await syncPersonaIfEmpty(token, preview.summary);
     }
     router.push('/arena');
   }
@@ -133,8 +173,8 @@ export default function OnboardingPreview() {
     <MobileShell>
       <div className="flex flex-col min-h-screen px-6 py-10 gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-white">Meet your twin</h1>
-          <p className="text-zinc-500 text-sm">
+          <h1 className="text-2xl font-bold text-primary">Meet your twin</h1>
+          <p className="text-subtle text-sm">
             This is how your agent will represent you in the arena. No YAML, no raw files.
           </p>
         </div>
@@ -149,6 +189,7 @@ export default function OnboardingPreview() {
           <AgentPreviewCard
             key={preview?.agentName ?? 'loading'}
             preview={preview ?? buildPreviewFromPersona(DEMO_PERSONAS[0])}
+            twinPrompt={twinPrompt}
             onPreviewChange={setPreview}
             onApprove={handleApprove}
             loading={loading}

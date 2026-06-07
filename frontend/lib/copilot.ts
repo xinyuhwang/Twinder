@@ -1,75 +1,4 @@
-import type { MatchCard } from '@/types';
-import type { AgentPreviewDisplay } from '@/lib/preview';
-import { applyWarmerVoice, getStrictPrivacySettings } from '@/lib/preview';
-
 export type CopilotSurface = 'preview' | 'queue' | 'detail';
-
-export interface CopilotResult {
-  message: string;
-  previewPatch?: Partial<AgentPreviewDisplay>;
-}
-
-export function composeMatchCopilot(prompt: string, card: MatchCard): string {
-  const lower = prompt.toLowerCase();
-
-  if (lower.includes('awkward') || lower.includes('opener')) {
-    const interest = card.common_interests[0];
-    const soft = interest
-      ? `Hey — I noticed we both care about ${interest}. ${card.suggested_opener ?? 'Worth a quick chat?'}`
-      : card.suggested_opener ?? 'Worth a quick chat?';
-    return soft;
-  }
-
-  if (lower.includes('ask next') || lower.includes('follow')) {
-    return card.follow_up_questions.length > 0
-      ? card.follow_up_questions.map((q, i) => `${i + 1}. ${q}`).join('\n')
-      : 'Ask what they are building right now and what kind of collaborator would actually help.';
-  }
-
-  const parts = [
-    card.headline,
-    card.summary,
-    card.strongest_overlap ? `Strongest overlap: ${card.strongest_overlap}` : null,
-    card.non_obvious_overlap ? `Non-obvious part: ${card.non_obvious_overlap}` : null,
-  ].filter(Boolean);
-
-  return parts.join('\n\n');
-}
-
-export function composePreviewCopilot(
-  prompt: string,
-  preview: AgentPreviewDisplay,
-): CopilotResult {
-  const lower = prompt.toLowerCase();
-
-  if (lower.includes('privacy') || lower.includes('stricter')) {
-    return {
-      message: 'Done. Your agent will share less by default and wait for your approval before revealing specifics.',
-      previewPatch: { privacySettings: getStrictPrivacySettings() },
-    };
-  }
-
-  if (lower.includes('corporate') || lower.includes('more like me') || lower.includes('warmer')) {
-    const warmer = applyWarmerVoice(preview);
-    return {
-      message: 'Got it. I loosened the corporate edges and made the voice sound more like you.',
-      previewPatch: {
-        summary: warmer.summary,
-        agentVoice: warmer.agentVoice,
-      },
-    };
-  }
-
-  if (lower.includes('improve')) {
-    return {
-      message: `I would lean harder into: ${preview.conversationBait.slice(0, 2).join(' and ') || preview.agentVibe}. That is what makes you memorable in agent conversations.`,
-    };
-  }
-
-  return {
-    message: 'Tell me what to tweak — voice, privacy, or how bold the agent should be.',
-  };
-}
 
 export function getCopilotPrompts(surface: CopilotSurface): string[] {
   if (surface === 'preview') {
@@ -88,3 +17,14 @@ export function getCopilotPrompts(surface: CopilotSurface): string[] {
     'What should I ask next?',
   ];
 }
+
+export const PREVIEW_COPILOT_INSTRUCTIONS = `You are Twinder's twin preview copilot.
+When the user asks to edit voice or sound more like them, call edit_agent_voice with summary and current_voice from the twin preview context.
+When they ask for stricter privacy, call make_privacy_stricter.
+When they ask to improve the profile, call improve_profile with the preview JSON from context.
+After edit_agent_voice or make_privacy_stricter returns new fields, call apply_preview_edits with summary, agent_voice, and/or privacy_settings.
+Be concise and friendly.`;
+
+export const MATCH_COPILOT_INSTRUCTIONS = `You are Twinder's match copilot.
+When the user asks about a match, call explain_match with the match card JSON from context and their question.
+Ground every answer in the match card data. Be concise, warm, and actionable.`;

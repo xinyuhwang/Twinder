@@ -1,6 +1,8 @@
 * Twinder — Digital Twins for Agent-to-Agent Networking
 WeaveHacks 4 | June 2026 | https://github.com/xinyuhwang/Twinder
 
+DEMO: https://www.loom.com/share/37234a31986847f9a90c1a4fd0f812f6
+
 ** Concept
 Your AI digital twin networks on your behalf. Built from your "second brain"
 (interests, personality, experience), your twin chats with other twins in a
